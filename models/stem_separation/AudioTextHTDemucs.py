@@ -6,7 +6,7 @@ from torch.nn import MultiheadAttention
 from demucs.htdemucs import HTDemucs
 from transformers import AutoTokenizer, ClapModel, ClapTextModel
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from fractions import Fraction
 from einops import rearrange
 
@@ -74,9 +74,9 @@ class TextCrossAttention(nn.Module):
         q_proj = self.q_proj(q)  # (B, Lq, feat_dim)
 
         # use PyTorch MultiheadAttention (batch_first=True)
-        print(f"q_proj shape: {q_proj.shape}")
-        print(f"k shape: {k.shape}")
-        print(f"v shape: {v.shape}")
+        # print(f"q_proj shape: {q_proj.shape}")
+        # print(f"k shape: {k.shape}")
+        # print(f"v shape: {v.shape}")
         attn_out, _ = self.attn(query=q_proj, key=k, value=v)  # (B, Lq, feat_dim)
 
         # residual + MLP + norm
@@ -145,45 +145,15 @@ class AudioTextHTDemucs(nn.Module):
         # Text cross attention
         self.text_attn = TextCrossAttention(model_dim, text_dim)
 
-    def _htdemucs_full_enc(self, wav):
+    def _htdemucs_full_enc(self, x, xt):
         """
         Helper function to do forward pass for all the encoding layers + cross attention
         """
-        length = wav.shape[-1]
-        length_pre_pad = None
-        if self.htdemucs.use_train_segment:
-            if self.training:
-                self.segment = Fraction(wav.shape[-1], self.sample_rate)
-            else:
-                training_length = int(self.segment * self.sample_rate)
-                if wav.shape[-1] < training_length:
-                    length_pre_pad = wav.shape[-1]
-                    wav = F.pad(wav, (0, training_length - length_pre_pad))
-                    
-        z = self.htdemucs._spec(wav)
-        mag = self.htdemucs._magnitude(z).to(wav.device)
-        x = mag
-
-        B, C, Fq, T = x.shape
-
-        # unlike previous Demucs, we always normalize because it is easier.
-        mean = x.mean(dim=(1, 2, 3), keepdim=True)
-        std = x.std(dim=(1, 2, 3), keepdim=True)
-        x = (x - mean) / (1e-5 + std)
-        # x will be the freq. branch input.
-
-        # Prepare the time branch input.
-        xt = wav
-        meant = xt.mean(dim=(1, 2), keepdim=True)
-        stdt = xt.std(dim=(1, 2), keepdim=True)
-        xt = (xt - meant) / (1e-5 + stdt)
-
-        # Frequence and waveform encoder (with storage for skip connections) 
-        saved = []  # skip connections, freq.
-        saved_t = []  # skip connections, time.
-        lengths = []  # saved lengths to properly remove padding, freq branch.
-        lengths_t = []  # saved lengths for time branch.
-        
+        # Frequence and waveform encoder (with storage for skip connections)   
+        saved       = []  # skip connections, freq.
+        saved_t     = []  # skip connections, time.
+        lengths     = []  # saved lengths to properly remove padding, freq branch.
+        lengths_t   = []  # saved lengths for time branch.      
         for idx, encode in enumerate(self.htdemucs.encoder):
             lengths.append(x.shape[-1])
             inject = None
@@ -225,8 +195,74 @@ class AudioTextHTDemucs(nn.Module):
                 x = rearrange(x, "b c (f t)-> b c f t", f=f)
                 xt = self.htdemucs.channel_downsampler_t(xt)
         
-        return x, xt
+        return x, xt, saved, saved_t, lengths, lengths_t
     
+    def _htdemucs_full_dec(self, length, length_pre_pad, dims: Tuple, x, xt, z, saved: List, saved_t: List, lengths: List, lengths_t: List, mean, std, meant, stdt, Fq):
+        for idx, decode in enumerate(self.htdemucs.decoder):
+            skip = saved.pop(-1)
+            x, pre = decode(x, skip, lengths.pop(-1))
+            # `pre` contains the output just before final transposed convolution,
+            # which is used when the freq. and time branch separate.
+
+            offset = self.htdemucs.depth - len(self.htdemucs.tdecoder)
+            if idx >= offset:
+                tdec = self.htdemucs.tdecoder[idx - offset]
+                length_t = lengths_t.pop(-1)
+                if tdec.empty:
+                    assert pre.shape[2] == 1, pre.shape
+                    pre = pre[:, :, 0]
+                    xt, _ = tdec(pre, None, length_t)
+                else:
+                    skip = saved_t.pop(-1)
+                    xt, _ = tdec(xt, skip, length_t)
+
+        # Let's make sure we used all stored skip connections.
+        assert len(saved)      == 0
+        assert len(lengths_t)  == 0
+        assert len(saved_t)    == 0
+        
+        B, C, Fq, T = dims
+        S = len(self.htdemucs.sources)
+        print(f"x shape: {x.shape}")
+        x = x.view(B, S, -1, Fq, T)
+        x = x * std[:, None] + mean[:, None]
+        
+        # to cpu as mps doesnt support complex numbers
+        # demucs issue #435 ##432
+        # NOTE: in this case z already is on cpu
+        # TODO: remove this when mps supports complex numbers
+        x_is_mps = x.device.type == "mps"
+        if x_is_mps:
+            x = x.cpu()
+
+        zout = self.htdemucs._mask(z, x)
+        training_length = int(self.htdemucs.segment * self.htdemucs.samplerate)
+        if self.htdemucs.use_train_segment:
+            if self.training:
+                x = self.htdemucs._ispec(zout, length)
+            else:
+                x = self.htdemucs._ispec(zout, training_length)
+        else:
+            x = self.htdemucs._ispec(zout, length)
+
+        # back to mps device
+        if x_is_mps:
+            x = x.to("mps")
+
+        if self.htdemucs.use_train_segment:
+            if self.training:
+                xt = xt.view(B, S, -1, length)
+            else:
+                xt = xt.view(B, S, -1, training_length)
+        else:
+            xt = xt.view(B, S, -1, length)
+        xt = xt * stdt[:, None] + meant[:, None]
+        x = xt + x
+        if length_pre_pad:
+            x = x[..., length_pre_pad]
+            
+        return x
+
     def _get_clap_embeddings(self, text: List[str]):
         clap_inputs = tokenizer(text, padding=True, return_tensors="pt")
         with torch.no_grad():       # or torch.inference_mode - Check this!
@@ -244,26 +280,61 @@ class AudioTextHTDemucs(nn.Module):
         text : List[str]
         Returns: (B, 1, C, T)    # separated 1-track (4 channels) GOAL
         """
+        # Parse initial input
+        length = wav.shape[-1]
+        length_pre_pad = None
+        if self.htdemucs.use_train_segment:
+            if self.training:
+                self.segment = Fraction(wav.shape[-1], self.sample_rate)
+            else:
+                training_length = int(self.segment * self.sample_rate)
+                if wav.shape[-1] < training_length:
+                    length_pre_pad = wav.shape[-1]
+                    wav = F.pad(wav, (0, training_length - length_pre_pad))
+                    
+        z = self.htdemucs._spec(wav)
+        mag = self.htdemucs._magnitude(z).to(wav.device)
+        x = mag
+
+        B, C, Fq, T = x.shape
+        dims = tuple(x.shape)
+        
+        # unlike previous Demucs, we always normalize because it is easier.
+        mean = x.mean(dim=(1, 2, 3), keepdim=True)
+        std = x.std(dim=(1, 2, 3), keepdim=True)
+        x = (x - mean) / (1e-5 + std)
+        # x will be the freq. branch input.
+
+        # Prepare the time branch input.
+        xt = wav
+        meant = xt.mean(dim=(1, 2), keepdim=True)
+        stdt = xt.std(dim=(1, 2), keepdim=True)
+        xt = (xt - meant) / (1e-5 + stdt)
+        
         # Encode mixed waveform in both frequency and time/waveform domain using HTDemucs
-        x, xt = self._htdemucs_full_enc(wav)
+        x, xt, saved, saved_t, lengths, lengths_t = self._htdemucs_full_enc(x, xt)
         
         print(f"x shape: {x.shape}")
         print(f"xt shape: {xt.shape}")
+        print(f"z shape: {z.shape}")
         
         # Encode text conditioning using CLAP text model
         text_emb = self._get_clap_embeddings(text)
         
-        print(f"text_emb shape: {text_emb.shape}")
+        # print(f"text_emb shape: {text_emb.shape}")
         
         # Run the text-conditioned cross-attention
         x_cond, xt_cond = self.text_attn(x, xt, text_emb)
                     
-        print(f"x_cond shape: {x_cond.shape}")
-        print(f"xt_cond shape: {xt_cond.shape}")
+        # print(f"x_cond shape: {x_cond.shape}")
+        # print(f"xt_cond shape: {xt_cond.shape}")
         
         # Now reuse HTDemucs decoder
+        # NOTE: Need to fix the final output to only be ONE source
+        # stem_wav = self._htdemucs_full_dec(wav.shape[-1], length_pre_pad, dims, x, xt, z, saved, saved_t, lengths, lengths_t, mean, meant, std, stdt, Fq)
+        stem_wav = self._htdemucs_full_dec(wav.shape[-1], length_pre_pad, dims, x_cond, xt_cond, z, saved, saved_t, lengths, lengths_t, mean, meant, std, stdt, Fq)
         
-        return torch.rand((1, 2, 44100))
+        return stem_wav
 
 
 # Example usage template:
