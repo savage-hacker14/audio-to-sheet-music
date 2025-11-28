@@ -298,8 +298,8 @@ if __name__ == "__main__":
     # Run training with custom parameters
     results = train(
         # Paths
-        train_dir="data/train",
-        test_dir="data/test",
+        train_dir="data/quick_train",
+        test_dir="data/quick_test",
         checkpoint_dir="checkpoints",
 
         # Audio parameters
@@ -307,9 +307,9 @@ if __name__ == "__main__":
         segment_seconds=6.0,
 
         # Training parameters
-        batch_size=4,
+        batch_size=1,
         num_workers=0,
-        epochs=5,
+        epochs=15,
         learning_rate=1e-4,
         weight_decay=1e-2,
         grad_clip=5.0,

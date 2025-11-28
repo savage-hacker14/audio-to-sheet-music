@@ -10,7 +10,7 @@ from tqdm import tqdm
 from demucs import pretrained
 from transformers import AutoTokenizer, ClapModel
 
-from src.models.stem_separation.AudioTextHTDemucs import AudioTextHTDemucs
+from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.loss import combined_loss, sdr_loss
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
 
