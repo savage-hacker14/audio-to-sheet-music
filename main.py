@@ -6,20 +6,25 @@ from src.dataloader import MusDBStemDataset, collate_fn
 from src.loss import sdr_loss, sisdr_loss, combined_loss, new_sdr_metric
 from src.models.stem_separation.AudioTextHTDemucs import AudioTextHTDemucs
 from src.train import train
+from utils import load_config
 
-def test_dataloader():
-    # Configuration
-    DATA_DIR = "data/train"
-    SEGMENT_SAMPLES = 44100 * 5
-    BATCH_SIZE = 2
+def test_dataloader(config_path: str):
+    # Configuration    
+    cfg             = load_config(config_path)
+    DATA_DIR        = cfg['data']['train_dir']
+    BATCH_SIZE      = cfg['training']['batch_size']
+    SAMPLE_RATE     = cfg['data']['sample_rate']
+    SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
+    RANDOM_SEGMENTS = cfg['data']['random_segments']
+    AUGMENT         = cfg['data']['augment']
 
     print("Creating dataset...")
     dataset = MusDBStemDataset(
         root_dir=DATA_DIR,
         segment_samples=SEGMENT_SAMPLES,
-        sample_rate=44100,
-        random_segments=True,
-        augment=True,
+        sample_rate=SAMPLE_RATE,
+        random_segments=RANDOM_SEGMENTS,
+        augment=AUGMENT,
     )
 
     print(f"Dataset length: {len(dataset)}")
@@ -32,7 +37,7 @@ def test_dataloader():
     print(f"Stem: {item['stem_name']}")
 
     print("\nTesting DataLoader...")
-    loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=0)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=cfg['training']['num_workers'])
 
     batch = next(iter(loader))
     print(f"Batch mixture shape: {batch['mixture'].shape}")  # Should be (2, 2, 220500)
@@ -42,10 +47,19 @@ def test_dataloader():
 
     print("\n✓ Dataloader test passed!")
 
-def test_losses():
+def test_losses(config_path: str):
     print("=" * 60)
     print("Testing Loss Functions")
     print("=" * 60)
+
+    # Get configuration
+    cfg             = load_config(config_path)
+    DATA_DIR        = cfg['data']['train_dir']
+    BATCH_SIZE      = cfg['training']['batch_size']
+    SAMPLE_RATE     = cfg['data']['sample_rate']
+    SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
+    RANDOM_SEGMENTS = cfg['data']['random_segments']
+    AUGMENT         = cfg['data']['augment']
 
     # Test 1: Perfect reconstruction (should give very high SDR)
     print("\n[Test 1] Perfect reconstruction")
@@ -142,9 +156,9 @@ def test_losses():
     try:
         # You'll need to update this path
         dataset = MusDBStemDataset(
-            root_dir="data/train",  # UPDATE THIS
-            segment_samples=44100 * 2,  # 2 seconds
-            sample_rate=44100,
+            root_dir=DATA_DIR,
+            segment_samples=SEGMENT_SAMPLES,
+            sample_rate=SAMPLE_RATE,
             random_segments=True,
             augment=False,
         )
@@ -168,10 +182,19 @@ def test_losses():
         print("(Update the path in the test script to run this test)")
         print("\n✓ Core loss function tests passed!")
 
-def test_model():
+def test_model(config_path: str):
     print("=" * 60)
     print("Testing AudioTextHTDemucs Model")
     print("=" * 60)
+    
+    # Configuration
+    cfg             = load_config(config_path)
+    DATA_DIR        = cfg['data']['train_dir']
+    BATCH_SIZE      = cfg['training']['batch_size']
+    SAMPLE_RATE     = cfg['data']['sample_rate']
+    SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
+    RANDOM_SEGMENTS = cfg['data']['random_segments']
+    AUGMENT         = cfg['data']['augment']
 
     # Load pre-trained models
     print("\n[1] Loading pre-trained models...")
@@ -213,14 +236,14 @@ def test_model():
     print("\n[4] Testing with real data...")
     try:
         dataset = MusDBStemDataset(
-            root_dir="data/train",
-            segment_samples=44100 * 3,  # 3 seconds
-            sample_rate=44100,
+            root_dir=DATA_DIR,
+            segment_samples=SEGMENT_SAMPLES,  # 3 seconds
+            sample_rate=SAMPLE_RATE,
             random_segments=True,
             augment=False,
         )
 
-        loader = DataLoader(dataset, batch_size=2, collate_fn=collate_fn, num_workers=0)
+        loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=cfg['training']['num_workers'])
         batch = next(iter(loader))
 
         mixture = batch['mixture']  # (B, C, T)
@@ -295,51 +318,57 @@ def test_model():
 
 
 if __name__ == "__main__":
-    # Run training with custom parameters
-    results = train(
-        # Paths
-        train_dir="data/quick_train",
-        test_dir="data/quick_test",
-        checkpoint_dir="checkpoints",
+    # Run tests
+    config_path = "config.yaml"
+    test_dataloader(config_path)
+    test_losses(config_path)
+    test_model(config_path)
+    
+    # Run training with custom parameters    
+    # results = train(
+    #     # Paths
+    #     train_dir="/home/jacob/datasets/musdb18/train",
+    #     test_dir="/home/jacob/datasets/musdb18/test",
+    #     checkpoint_dir="checkpoints/",
 
-        # Audio parameters
-        sample_rate=44100,
-        segment_seconds=6.0,
+    #     # Audio parameters
+    #     sample_rate=44100,
+    #     segment_seconds=6.0,
 
-        # Training parameters
-        batch_size=1,
-        num_workers=0,
-        epochs=15,
-        learning_rate=1e-4,
-        weight_decay=1e-2,
-        grad_clip=5.0,
+    #     # Training parameters
+    #     batch_size=1,
+    #     num_workers=0,
+    #     epochs=15,
+    #     learning_rate=1e-4,
+    #     weight_decay=1e-2,
+    #     grad_clip=5.0,
 
-        # Loss weights
-        sdr_weight=0.9,
-        sisdr_weight=0.1,
+    #     # Loss weights
+    #     sdr_weight=0.9,
+    #     sisdr_weight=0.1,
 
-        # Model parameters
-        model_dim=384,
-        text_dim=512,
-        n_heads=8,
+    #     # Model parameters
+    #     model_dim=384,
+    #     text_dim=512,
+    #     n_heads=8,
 
-        # Logging
-        use_wandb=False,  # Set True to enable W&B logging
-        wandb_project="audio-text-htdemucs",
-        wandb_run_name=None,  # Auto-generated if None
-        log_every=50,
-        validate_every=1,
-        save_every=5,
+    #     # Logging
+    #     use_wandb=True,  # Set True to enable W&B logging
+    #     wandb_project="audio-text-htdemucs",
+    #     wandb_run_name=None,  # Auto-generated if None
+    #     log_every=50,
+    #     validate_every=1,
+    #     save_every=5,
 
-        # Mixed precision
-        use_amp=False,
+    #     # Mixed precision
+    #     use_amp=False,
 
-        # Device (None for auto-detect)
-        device=None,
+    #     # Device (None for auto-detect)
+    #     device=None,
 
-        # Resume from specific checkpoint (None to auto-resume from latest)
-        resume_from=None,
-    )
+    #     # Resume from specific checkpoint (None to auto-resume from latest)
+    #     resume_from=None,
+    # )
 
-    print(f"\nTraining finished!")
-    print(f"Best SDR achieved: {results['best_sdr']:.2f} dB")
+    # print(f"\nTraining finished!")
+    # print(f"Best SDR achieved: {results['best_sdr']:.2f} dB")

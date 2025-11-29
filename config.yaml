@@ -1,0 +1,39 @@
+data:
+  train_dir: /home/jacob/datasets/musdb18/train
+  test_dir: /home/jacob/datasets/musdb18/test
+  segment_seconds: 10
+  sample_rate: 44100
+  channels: 2
+  random_segments: False
+  augment: True
+
+model:
+  name: Audio-Text-HTDemucs
+  model_dim: 384
+  text_dim: 512
+  num_heads: 8
+  device: cuda
+  use_amp: False
+
+training:
+  batch_size: 4
+  num_workers: 0
+  num_epochs: 100
+  optimizer:
+    name: AdamW
+    lr: 1e-4
+    weight_decay: 1e-2
+    grad_clip: 1.0
+  loss_weights:
+    sdr: 0.9
+    sisdr_weight: 0.1
+
+wandb:
+  use_wandb: True
+  project: audio-text-htdemucs
+  run_name: null
+  log_every: 50       # Log to wandb every N batches
+  validate_every: 1   # Validate every N epochs
+  save_every: 5       # Save model checkpoint every N epochs
+  checkpoint_dir: ../checkpoints
+  resume_from: null

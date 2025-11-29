@@ -72,13 +72,13 @@ def test_inference(
         augment=False,
     )
 
-    loader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn, num_workers=0)
+    loader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=collate_fn, num_workers=0)
 
     # Create output directory
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nRunning inference on {len(dataset)} samples...")
+    print(f"\nRunning inference on {len(dataset)} samples ({len(loader)} batches)...")
     print("=" * 60)
 
     sdr_scores = {stem: [] for stem in STEMS}
@@ -126,8 +126,8 @@ def test_inference(
 
 if __name__ == "__main__":
     test_inference(
-        checkpoint_path="checkpoints/best_model.pt",
-        data_dir="data/quick_train",
-        output_dir="results",
+        checkpoint_path="checkpoints/2025_11_28/best_model.pt",
+        data_dir="/home/jacob/datasets/musdb18/inference",
+        output_dir="results/",
         device=None,
     )

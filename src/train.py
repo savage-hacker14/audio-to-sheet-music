@@ -524,4 +524,4 @@ def train(
 
 if __name__ == "__main__":
     # Example: run training with default parameters
-    train()
+    train(train_dir="/home/jacob/datasets/musdb18/train", test_dir="/home/jacob/datasets/musdb18/test", checkpoint_dir="../checkpoints")
