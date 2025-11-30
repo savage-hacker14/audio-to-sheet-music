@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple
 import torch
 from torch.utils.data import Dataset
 import stempeg
+import soundfile as sf
+import math
 import numpy as np
 
 # ============================================================================
@@ -43,15 +45,30 @@ class MusDBStemDataset(Dataset):
         self.random_segments = random_segments
         self.augment = augment
 
+        self.stem_names = ["drums", "bass", "other", "vocals"]
+
         self.files = list(self.root_dir.glob("*.stem.mp4"))
         if not self.files:
             raise ValueError(f"No .stem.mp4 files found in {root_dir}")
+        
+        # Compute number of examples
+        self.index_map      = []                        # (file_idx, stem_idx, segment_idx)
+        #self.sample_lengths = [0] * len(self.files)     # total samples per file
+        for file_idx, file in enumerate(self.files):
+            info = stempeg.Info(str(file))
+            total_samples = info.duration(0) * info.sample_rate(0)      # 0 - using mixture stream as reference
+            #self.sample_lengths[file_idx] = int(total_samples)
+            num_segments = math.ceil(total_samples / segment_samples)
 
-        print(f"Found {len(self.files)} tracks in {root_dir}")
-        self.stem_names = ["drums", "bass", "other", "vocals"]
+            # Build index map: for each stem, each segment
+            for stem_idx in range(len(self.stem_names)):
+                for seg in range(num_segments):
+                    self.index_map.append((file_idx, stem_idx, seg))
+
+        print(f"Found {len(self.files)} tracks, total dataset items: {len(self.index_map)}")
 
     def __len__(self) -> int:
-        return len(self.files) * len(self.stem_names)
+        return len(self.index_map)
 
     def _load_stems(self, filepath: Path) -> np.ndarray:
         """Load all stems from a .stem.mp4 file."""
@@ -60,7 +77,7 @@ class MusDBStemDataset(Dataset):
         # [mix, drums, bass, other, vocals]
         return stems
 
-    def _extract_segment(self, stems: np.ndarray) -> np.ndarray:
+    def _extract_random_segment(self, stems: np.ndarray) -> np.ndarray:
         """Extract the same random segment from all stems."""
         total_samples = stems.shape[1]  # stems: (num_stems, samples, channels)
 
@@ -77,6 +94,25 @@ class MusDBStemDataset(Dataset):
             stems = stems[:, start:start + self.segment_samples, :]
 
         return stems
+    
+    def _extract_segment(self, stems: np.ndarray, seg_idx: int) -> np.ndarray:
+        total_samples = stems.shape[1]
+
+        if self.random_segments:
+            # fallback to random segment extractor
+            return self._extract_random_segment(stems)
+
+        start = seg_idx * self.segment_samples
+        end = start + self.segment_samples
+
+        if end <= total_samples:
+            return stems[:, start:end, :]
+        else:
+            # Last segment may need padding
+            pad_amount = end - total_samples
+            seg = stems[:, start:, :]
+            seg = np.pad(seg, ((0, 0),(0, pad_amount), (0, 0)), mode="constant")
+            return seg
 
     def _augment(self, mixture: np.ndarray, target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Apply data augmentation."""
@@ -92,42 +128,38 @@ class MusDBStemDataset(Dataset):
         return mixture, target
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor | str]:
-        file_idx = idx // len(self.stem_names)
-        stem_idx = idx % len(self.stem_names)
+        file_idx, stem_idx, seg_idx = self.index_map[idx]
 
         filepath = self.files[file_idx]
-        stem_name = self.stem_names[stem_idx]
-
-        # Load all stems with resampling handled by stempeg
         stems = self._load_stems(filepath)
 
-        # Extract same segment from all stems
-        stems = self._extract_segment(stems)
+        # deterministic segment selection
+        stems = self._extract_segment(stems, seg_idx)
 
-        # stems: [mix, drums, bass, other, vocals]
-        mixture = stems[0]  # (T, C)
-        target = stems[stem_idx + 1]  # (T, C)
+        mixture = stems[0]               # (T, C)
+        target  = stems[stem_idx+1]      # (T, C)
 
-        # Augmentation
         if self.augment:
             mixture, target = self._augment(mixture, target)
 
-        # Convert to tensors: (T, C) -> (C, T)
-        mixture_tensor = torch.from_numpy(mixture.T).float()
-        target_tensor = torch.from_numpy(target.T).float()
+        # -> (C, T)
+        mixture = torch.from_numpy(mixture.T).float()
+        target  = torch.from_numpy(target.T).float()
 
-        # Ensure stereo
-        if mixture_tensor.shape[0] == 1:
-            mixture_tensor = mixture_tensor.repeat(2, 1)
-            target_tensor = target_tensor.repeat(2, 1)
+        # ensure stereo
+        if mixture.shape[0] == 1:
+            mixture = mixture.repeat(2, 1)
+            target  = target.repeat(2, 1)
 
-        prompt = get_random_prompt(stem_name)
+        prompt = get_random_prompt(self.stem_names[stem_idx])
 
         return {
-            "mixture": mixture_tensor,
-            "target": target_tensor,
+            "mixture": mixture,
+            "target": target,
             "prompt": prompt,
-            "stem_name": stem_name,
+            "stem_name": self.stem_names[stem_idx],
+            "file_idx": file_idx,
+            "segment_idx": seg_idx,
         }
 
 

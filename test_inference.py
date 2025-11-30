@@ -5,6 +5,7 @@ from pathlib import Path
 from demucs import pretrained
 from transformers import ClapModel, AutoTokenizer
 from torch.utils.data import DataLoader
+from torchaudio.transforms import Fade
 
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
@@ -42,10 +43,11 @@ def test_inference(
         output_dir: str = "results",
         sample_rate: int = 44100,
         segment_seconds: float = 6.0,
+        overlap: float = 0.1,
         device: str = None,
 ):
     """
-    Run inference on a single song, compute SDR for all stems, save results.
+    Run inference on a single song (extract all 4 stems), compute SDR for all stems, save results.
 
     Args:
         checkpoint_path: Path to model checkpoint
@@ -53,8 +55,10 @@ def test_inference(
         output_dir: Directory to save separated stems
         sample_rate: Audio sample rate
         segment_seconds: Segment length (should match training)
+        overlap: Overlap fraction between chunks
         device: Device to use (auto-detect if None)
     """
+    # Set device
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
@@ -71,55 +75,109 @@ def test_inference(
         random_segments=False,
         augment=False,
     )
-
     loader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=collate_fn, num_workers=0)
 
-    # Create output directory
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+    # Main inference loop
+    all_stems = dataset._load_stems(dataset.files[0])
+    all_stems = torch.from_numpy(all_stems).permute(0, 2, 1).float()  # (num_stems, channels, samples)
+    all_stems = all_stems.to(device)
+    full_mixure = all_stems[0]   # (C, T)
+    length = all_stems.shape[-1]                              # Full track T
+    final = torch.zeros((len(STEMS), 2, all_stems.shape[-1]), device=device)     # NOTE: Assuming stereo output
+    for stem_idx, stem_name in enumerate(STEMS):
+        # ============================================================
+        # Compute chunking parameters
+        # ============================================================
+        chunk_len = int(sample_rate * segment_seconds)      # check if (1 + overlap) is needed here
+        overlap_frames = int(overlap * sample_rate)
 
-    print(f"\nRunning inference on {len(dataset)} samples ({len(loader)} batches)...")
-    print("=" * 60)
+        fade = Fade(
+            fade_in_len=0,
+            fade_out_len=overlap_frames,
+            fade_shape="linear"
+        )
 
-    sdr_scores = {stem: [] for stem in STEMS}
+        start = 0
+        end = chunk_len
 
-    for batch in loader:
-        mixture = batch["mixture"].to(device)
-        target = batch["target"].to(device)
-        prompt = batch["prompt"][0]
-        stem_name = batch["stem_name"][0]
+        print(f"Extracting stem '{stem_name}'...")
 
-        # Run inference
-        estimated = model(mixture, batch["prompt"])
+        # ============================================================
+        # Chunked streaming loop for given `stem_name`
+        # ============================================================
+        while start < length:
+            end = min(start + chunk_len, length)
 
-        # Compute SDR
-        sdr = -sdr_loss(estimated, target).item()
-        sdr_scores[stem_name].append(sdr)
+            chunk = full_mixure[:, start:end].unsqueeze(0).to(device)   # (1, C, T_chunk)
+            print(f"start: {start}, end: {end}")
 
-        print(f"{stem_name:8s} | Prompt: '{prompt:20s}' | SDR: {sdr:6.2f} dB")
+            with torch.no_grad():
+                out = model(chunk, stem_name)    # (B, 1, C, T_chunk); Also using stem name as prompt (this might be an issue for 'other' stem)
 
-        # Save the estimated stem
-        output_file = output_path / f"{stem_name}_{prompt.replace(' ', '_')}.wav"
-        audio_np = estimated.squeeze(0).cpu().numpy().T  # (C, T) -> (T, C)
-        sf.write(str(output_file), audio_np, sample_rate)
+            # Determine fades for this chunk
+            fade_in = 0 if start == 0 else overlap_frames
+            fade_out = overlap_frames if end < length else 0
 
-    # Summary
-    print("\n" + "=" * 60)
-    print("SDR Summary (averaged over segments):")
-    print("=" * 60)
+            fade = Fade(
+                fade_in_len=fade_in,
+                fade_out_len=fade_out,
+                fade_shape="linear"
+            )
 
-    all_sdrs = []
-    for stem in STEMS:
-        if sdr_scores[stem]:
-            avg_sdr = sum(sdr_scores[stem]) / len(sdr_scores[stem])
-            all_sdrs.append(avg_sdr)
-            print(f"  {stem:8s}: {avg_sdr:6.2f} dB (n={len(sdr_scores[stem])})")
+            out = fade(out)
 
-    if all_sdrs:
-        print(f"  {'Average':8s}: {sum(all_sdrs) / len(all_sdrs):6.2f} dB")
+            # Flatten batch
+            out = out.squeeze(0)   # -> (C, T_chunk)
 
-    print("=" * 60)
-    print(f"Results saved to: {output_path}")
+            # Add into final buffer
+            final[stem_idx, :, start:end] += out
+
+            # Move window
+            start += (chunk_len - overlap_frames)
+
+
+    # ============================================================
+    # Compute SDR for each stem (after chunked processing)
+    # ============================================================
+    sdr_scores = {stem: -30.0 for stem in STEMS}
+    for i in range(len(STEMS)):
+        stem_name = STEMS[i]
+
+        estimate = final[i, :, :]   # (C, T)
+        sdr = -sdr_loss(estimate, all_stems[i]).item()
+        sdr_scores[stem_name] = sdr
+        print(f"{stem_name:8s} | SDR: {sdr:6.2f} dB")
+
+        # Save FULL stem tracks to output directory
+        if output_dir:
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            audio_np = estimate.cpu().numpy().T                             # (T, C)
+            output_file = Path(output_dir) / f"extracted_{stem_name}.wav"
+            sf.write(str(output_file), audio_np, sample_rate)
+
+    # Also save mixture for reference
+    if output_dir:
+        mixture_np = full_mixure.cpu().numpy().T                             # (T, C)
+        output_file = Path(output_dir) / f"mixture.wav"
+        sf.write(str(output_file), mixture_np, sample_rate)
+
+    # # Summary
+    # print("\n" + "=" * 60)
+    # print("SDR Summary (averaged over segments):")
+    # print("=" * 60)
+
+    # all_sdrs = []
+    # for stem in STEMS:
+    #     if sdr_scores[stem]:
+    #         avg_sdr = sum(sdr_scores[stem]) / len(sdr_scores[stem])
+    #         all_sdrs.append(avg_sdr)
+    #         print(f"  {stem:8s}: {avg_sdr:6.2f} dB (n={len(sdr_scores[stem])})")
+
+    # if all_sdrs:
+    #     print(f"  {'Average':8s}: {sum(all_sdrs) / len(all_sdrs):6.2f} dB")
+
+    # print("=" * 60)
+    # print(f"Results saved to: {output_path}")
 
     return sdr_scores
 
@@ -128,6 +186,6 @@ if __name__ == "__main__":
     test_inference(
         checkpoint_path="checkpoints/2025_11_28/best_model.pt",
         data_dir="/home/jacob/datasets/musdb18/inference",
-        output_dir="results/",
+        output_dir="results/2025_11_29",
         device=None,
     )

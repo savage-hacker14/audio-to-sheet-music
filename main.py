@@ -14,7 +14,7 @@ def test_dataloader(config_path: str):
     DATA_DIR        = cfg['data']['train_dir']
     BATCH_SIZE      = cfg['training']['batch_size']
     SAMPLE_RATE     = cfg['data']['sample_rate']
-    SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
+    SEGMENT_SAMPLES = int(SAMPLE_RATE * 5)       # Fixed 5 second segment length for testing
     RANDOM_SEGMENTS = cfg['data']['random_segments']
     AUGMENT         = cfg['data']['augment']
 
@@ -32,7 +32,9 @@ def test_dataloader(config_path: str):
     print("\nTesting single item...")
     item = dataset[0]
     print(f"Mixture shape: {item['mixture'].shape}")  # Should be (2, 220500)
+    assert item['mixture'].shape == (2, 220500)
     print(f"Target shape: {item['target'].shape}")    # Should be (2, 220500)
+    assert item['target'].shape == (2, 220500)
     print(f"Prompt: {item['prompt']}")
     print(f"Stem: {item['stem_name']}")
 
@@ -40,8 +42,10 @@ def test_dataloader(config_path: str):
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=cfg['training']['num_workers'])
 
     batch = next(iter(loader))
-    print(f"Batch mixture shape: {batch['mixture'].shape}")  # Should be (2, 2, 220500)
-    print(f"Batch target shape: {batch['target'].shape}")    # Should be (2, 2, 220500)
+    print(f"Batch mixture shape: {batch['mixture'].shape}")  # Should be (BATCH_SIZE, 2, 220500)
+    assert batch['mixture'].shape == (BATCH_SIZE, 2, 220500)
+    print(f"Batch target shape: {batch['target'].shape}")    # Should be (BATCH_SIZE, 2, 220500)
+    assert batch['target'].shape == (BATCH_SIZE, 2, 220500)
     print(f"Prompts: {batch['prompt']}")
     print(f"Stems: {batch['stem_name']}")
 
@@ -55,11 +59,8 @@ def test_losses(config_path: str):
     # Get configuration
     cfg             = load_config(config_path)
     DATA_DIR        = cfg['data']['train_dir']
-    BATCH_SIZE      = cfg['training']['batch_size']
     SAMPLE_RATE     = cfg['data']['sample_rate']
     SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
-    RANDOM_SEGMENTS = cfg['data']['random_segments']
-    AUGMENT         = cfg['data']['augment']
 
     # Test 1: Perfect reconstruction (should give very high SDR)
     print("\n[Test 1] Perfect reconstruction")
@@ -193,8 +194,6 @@ def test_model(config_path: str):
     BATCH_SIZE      = cfg['training']['batch_size']
     SAMPLE_RATE     = cfg['data']['sample_rate']
     SEGMENT_SAMPLES = int(cfg['data']['sample_rate'] * cfg['data']['segment_seconds'])
-    RANDOM_SEGMENTS = cfg['data']['random_segments']
-    AUGMENT         = cfg['data']['augment']
 
     # Load pre-trained models
     print("\n[1] Loading pre-trained models...")
