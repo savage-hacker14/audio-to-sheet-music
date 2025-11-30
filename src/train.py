@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.cuda.amp import GradScaler, autocast
@@ -217,6 +217,10 @@ def train(
         test_dir: str = "../data/test",
         checkpoint_dir: str = "../checkpoints",
 
+        # Data splits
+        pct_train: float = 0.1,
+        pct_test: float = 0.1,
+
         # Audio parameters
         sample_rate: int = 44100,
         segment_seconds: float = 6.0,
@@ -375,9 +379,21 @@ def train(
         augment=False,
     )
 
+    # Create suubsets if specified
+    if 0.0 < pct_train < 1.0:
+        num_train = int(len(train_dataset) * pct_train)
+        train_idxs = torch.randperm(len(train_dataset))[:num_train]
+        train_subset = Subset(train_dataset, train_idxs)
+        
+    if 0.0 < pct_test < 1.0:
+        num_val = int(len(val_dataset) * pct_test)
+        val_idxs = torch.randperm(len(val_dataset))[:num_val]
+        val_subset = Subset(train_dataset, val_idxs)
+
+
     # Create dataloaders
     train_loader = DataLoader(
-        train_dataset,
+        train_dataset if pct_train >= 1.0 else train_subset,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
@@ -387,7 +403,7 @@ def train(
     )
 
     val_loader = DataLoader(
-        val_dataset,
+        val_dataset if pct_test >= 1.0 else val_subset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,

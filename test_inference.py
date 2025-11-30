@@ -160,6 +160,8 @@ def test_inference(
         mixture_np = full_mixure.cpu().numpy().T                             # (T, C)
         output_file = Path(output_dir) / f"mixture.wav"
         sf.write(str(output_file), mixture_np, sample_rate)
+        
+    # TODO: Plot spectrograms of original vs extracted stems
 
     # # Summary
     # print("\n" + "=" * 60)
