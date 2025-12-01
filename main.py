@@ -318,60 +318,13 @@ def test_model(config_path: str):
 
 if __name__ == "__main__":
     # Run tests
-    # config_path = "config.yaml"
+    config_path = "config.yaml"
     # test_dataloader(config_path)
     # test_losses(config_path)
     # test_model(config_path)
     
     # Run training with custom parameters    
-    results = train(
-        # Paths
-        train_dir="/home/jacob/datasets/musdb18/train",
-        test_dir="/home/jacob/datasets/musdb18/test",
-        checkpoint_dir="checkpoints/",
-
-        # Audio parameters
-        sample_rate=44100,
-        segment_seconds=6.0,
-        
-        # Data parameters
-        pct_train=0.1,
-        pct_test=0.1,
-
-        # Training parameters
-        batch_size=1,
-        num_workers=0,
-        epochs=15,
-        learning_rate=1e-4,
-        weight_decay=1e-2,
-        grad_clip=5.0,
-
-        # Loss weights
-        sdr_weight=0.9,
-        sisdr_weight=0.1,
-
-        # Model parameters
-        model_dim=384,
-        text_dim=512,
-        n_heads=8,
-
-        # Logging
-        use_wandb=True,  # Set True to enable W&B logging
-        wandb_project="audio-text-htdemucs",
-        wandb_run_name=None,  # Auto-generated if None
-        log_every=50,
-        validate_every=1,
-        save_every=5,
-
-        # Mixed precision
-        use_amp=False,
-
-        # Device (None for auto-detect)
-        device=None,
-
-        # Resume from specific checkpoint (None to auto-resume from latest)
-        resume_from=None,
-    )
+    results = train(config_path)
 
     print(f"\nTraining finished!")
     print(f"Best SDR achieved: {results['best_sdr']:.2f} dB")

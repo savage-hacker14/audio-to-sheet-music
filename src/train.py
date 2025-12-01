@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 import torch
 from torch.utils.data import DataLoader, Subset
 from torch.optim import AdamW
@@ -13,6 +13,7 @@ from transformers import AutoTokenizer, ClapModel
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.loss import combined_loss, sdr_loss
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
+from utils import load_config
 
 
 # ============================================================================
@@ -211,58 +212,11 @@ def load_checkpoint(
 # Main Training Function
 # ============================================================================
 
-def train(
-        # Paths
-        train_dir: str = "../data/train",
-        test_dir: str = "../data/test",
-        checkpoint_dir: str = "../checkpoints",
-
-        # Data splits
-        pct_train: float = 0.1,
-        pct_test: float = 0.1,
-
-        # Audio parameters
-        sample_rate: int = 44100,
-        segment_seconds: float = 6.0,
-
-        # Training parameters
-        batch_size: int = 4,
-        num_workers: int = 4,
-        epochs: int = 10,
-        learning_rate: float = 1e-4,
-        weight_decay: float = 1e-2,
-        grad_clip: float = 5.0,
-
-        # Loss weights
-        sdr_weight: float = 0.9,
-        sisdr_weight: float = 0.1,
-
-        # Model parameters
-        model_dim: int = 384,
-        text_dim: int = 512,
-        n_heads: int = 8,
-
-        # Logging
-        use_wandb: bool = False,
-        wandb_project: str = "audio-text-htdemucs",
-        wandb_run_name: Optional[str] = None,
-        log_every: int = 50,
-        validate_every: int = 1,
-        save_every: int = 5,
-
-        # Mixed precision
-        use_amp: bool = True,
-
-        # Device
-        device: Optional[str] = None,
-
-        # Resume training
-        resume_from: Optional[str] = None,
-):
+def train(config_path):
     """
     Main training function for AudioTextHTDemucs.
 
-    Args:
+    Args (loaded from YAML config):
         train_dir: Path to training data directory
         test_dir: Path to test/validation data directory
         checkpoint_dir: Path to save checkpoints
@@ -292,6 +246,50 @@ def train(
     Returns:
         Dict containing final metrics and best SDR achieved
     """
+    # Load configuration
+    cfg             = load_config(config_path)
+    data_cfg        = cfg["data"]
+    model_cfg       = cfg["model"]
+    training_cfg    = cfg["training"]
+    wandb_cfg       = cfg["wandb"]
+    # Paths
+    train_dir       = data_cfg.get("train_dir", "../data/train")
+    test_dir        = data_cfg.get("test_dir", "../data/test")
+    checkpoint_dir  = wandb_cfg.get("checkpoint_dir", "../checkpoints")
+    # Data splits
+    pct_train       = data_cfg.get("pct_train", 1.0)
+    pct_test        = data_cfg.get("pct_test", 1.0)
+    # Audio parameters
+    sample_rate     = data_cfg.get("sample_rate", 44100)
+    segment_seconds = data_cfg.get("segment_seconds", 6.0)
+    # Training parameters
+    batch_size      = training_cfg.get("batch_size", 4)
+    num_workers     = training_cfg.get("num_workers", 0)
+    epochs          = training_cfg.get("epochs", 10)
+    learning_rate   = float(training_cfg["optimizer"].get("lr", 1e-4))
+    weight_decay    = float(training_cfg["optimizer"].get("weight_decay", 1e-5))
+    grad_clip       = training_cfg["optimizer"].get("grad_clip", 1.0)
+    # Loss weights
+    sdr_weight      = training_cfg["loss_weights"].get("sdr", 0.9)
+    sisdr_weight    = training_cfg["loss_weights"].get("sisdr", 0.1)
+    # Model parameters
+    model_dim       = model_cfg.get("model_dim", 384)
+    text_dim        = model_cfg.get("text_dim", 512)
+    n_heads         = model_cfg.get("n_heads", 8)
+    # Logging
+    use_wandb       = wandb_cfg.get("use_wandb", True)
+    wandb_project   = wandb_cfg.get("project", "audio-text-htdemucs")
+    wandb_run_name  = wandb_cfg.get("run_name", None)
+    log_every       = wandb_cfg.get("log_every", 50)
+    validate_every  = wandb_cfg.get("validate_every", 1)
+    save_every      = wandb_cfg.get("save_every", 1)
+    # Mixed precision
+    use_amp         = training_cfg.get("use_amp", False)
+    # Device
+    device          = model_cfg.get("device", None)
+    # Resume training
+    resume_from     = training_cfg.get("resume_from", None)
+    
     # Auto-detect device
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"

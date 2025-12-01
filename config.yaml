@@ -1,7 +1,9 @@
 data:
   train_dir: /home/jacob/datasets/musdb18/train
   test_dir: /home/jacob/datasets/musdb18/test
-  segment_seconds: 10
+  segment_seconds: 6.0
+  pct_train: 0.1
+  pct_test: 0.1
   sample_rate: 44100
   channels: 2
   random_segments: False
@@ -18,15 +20,16 @@ model:
 training:
   batch_size: 4
   num_workers: 0
-  num_epochs: 100
+  num_epochs: 25
   optimizer:
     name: AdamW
     lr: 1e-4
     weight_decay: 1e-2
-    grad_clip: 1.0
+    grad_clip: 5.0
   loss_weights:
     sdr: 0.9
     sisdr_weight: 0.1
+  resume_from: null
 
 wandb:
   use_wandb: True
@@ -36,4 +39,3 @@ wandb:
   validate_every: 1   # Validate every N epochs
   save_every: 5       # Save model checkpoint every N epochs
   checkpoint_dir: ../checkpoints
-  resume_from: null
