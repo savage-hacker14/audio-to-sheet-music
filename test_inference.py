@@ -11,8 +11,8 @@ from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
 from src.loss import sdr_loss
 
-
-STEMS = ["drums", "bass", "other", "vocals"]
+#STEMS = ["drums", "bass", "other", "vocals"]
+STEMS = ["drums", "bass", "other", "vocals", "piano", "clapping", "guitar", "violin"]      # Adding negative query stems for testing
 
 def load_model(checkpoint_path: str, device: str = "cuda") -> AudioTextHTDemucs:
     """Load model from checkpoint."""
@@ -78,7 +78,8 @@ def test_inference(
     loader = DataLoader(dataset, batch_size=1, shuffle=False, collate_fn=collate_fn, num_workers=0)
 
     # Main inference loop
-    all_stems = dataset._load_stems(dataset.files[0])
+    filename = dataset.files[0]
+    all_stems = dataset._load_stems(filename)
     all_stems = torch.from_numpy(all_stems).permute(0, 2, 1).float()  # (num_stems, channels, samples)
     all_stems = all_stems.to(device)
     full_mixure = all_stems[0]   # (C, T)
@@ -140,25 +141,33 @@ def test_inference(
     # Compute SDR for each stem (after chunked processing)
     # ============================================================
     sdr_scores = {stem: -30.0 for stem in STEMS}
-    for i in range(len(STEMS)):
+    
+    for i in range(min(len(STEMS), 4)):  # Limit to true 4 stems for SDR computation
         stem_name = STEMS[i]
 
         estimate = final[i, :, :]   # (C, T)
-        sdr = -sdr_loss(estimate, all_stems[i]).item()
+        sdr = -sdr_loss(estimate, all_stems[i + 1]).item()          # Stem 0 is mixture
         sdr_scores[stem_name] = sdr
         print(f"{stem_name:8s} | SDR: {sdr:6.2f} dB")
 
-        # Save FULL stem tracks to output directory
-        if output_dir:
-            Path(output_dir).mkdir(parents=True, exist_ok=True)
+    # Save FULL stem tracks to output directory
+    if output_dir:
+        cleaned_filename = Path(filename).stem.replace(".stem", "")
+        cleaned_filename = cleaned_filename.replace("-", "")
+        cleaned_filename = cleaned_filename.replace("'", "")
+        cleaned_filename = cleaned_filename.replace(" ", "_")
+        full_dir = Path(output_dir) / Path(cleaned_filename)
+        for i in range(len(STEMS)):
+            stem_name = STEMS[i]
+            estimate = final[i, :, :]
+            Path(full_dir).mkdir(parents=True, exist_ok=True)
             audio_np = estimate.cpu().numpy().T                             # (T, C)
-            output_file = Path(output_dir) / f"extracted_{stem_name}.wav"
+            output_file = full_dir / f"extracted_{stem_name}.wav"
             sf.write(str(output_file), audio_np, sample_rate)
 
-    # Also save mixture for reference
-    if output_dir:
+        # Also save mixture for reference
         mixture_np = full_mixure.cpu().numpy().T                             # (T, C)
-        output_file = Path(output_dir) / f"mixture.wav"
+        output_file = full_dir / f"mixture.wav"
         sf.write(str(output_file), mixture_np, sample_rate)
         
     # TODO: Plot spectrograms of original vs extracted stems
@@ -186,8 +195,8 @@ def test_inference(
 
 if __name__ == "__main__":
     test_inference(
-        checkpoint_path="checkpoints/2025_11_28/best_model.pt",
-        data_dir="/home/jacob/datasets/musdb18/inference",
-        output_dir="results/2025_11_29",
+        checkpoint_path="checkpoints/2025_11_30/best_model.pt",
+        data_dir="/home/jacob/datasets/musdb18/inference2",
+        output_dir="results/",
         device=None,
     )
