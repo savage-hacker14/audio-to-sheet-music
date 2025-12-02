@@ -195,8 +195,8 @@ def test_inference(
 
 if __name__ == "__main__":
     test_inference(
-        checkpoint_path="checkpoints/2025_11_30/best_model.pt",
+        checkpoint_path="checkpoints/2025_11_30_batch4/best_model.pt",
         data_dir="/home/jacob/datasets/musdb18/inference2",
-        output_dir="results/",
+        output_dir="results/2025_12_01",
         device=None,
     )

@@ -265,7 +265,7 @@ def train(config_path):
     # Training parameters
     batch_size      = training_cfg.get("batch_size", 4)
     num_workers     = training_cfg.get("num_workers", 0)
-    epochs          = training_cfg.get("epochs", 10)
+    epochs          = training_cfg.get("num_epochs", 10)
     learning_rate   = float(training_cfg["optimizer"].get("lr", 1e-4))
     weight_decay    = float(training_cfg["optimizer"].get("weight_decay", 1e-5))
     grad_clip       = training_cfg["optimizer"].get("grad_clip", 1.0)
