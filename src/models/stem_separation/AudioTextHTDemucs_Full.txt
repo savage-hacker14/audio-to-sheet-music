@@ -1,0 +1,889 @@
+Model Summary:
+AudioTextHTDemucs(
+  (htdemucs): HTDemucs(
+    (encoder): ModuleList(
+      (0): HEncLayer(
+        (conv): Conv2d(4, 48, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (norm1): Identity()
+        (rewrite): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (1): HEncLayer(
+        (conv): Conv2d(48, 96, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (norm1): Identity()
+        (rewrite): Conv2d(96, 192, kernel_size=(1, 1), stride=(1, 1))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (2): HEncLayer(
+        (conv): Conv2d(96, 192, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (norm1): Identity()
+        (rewrite): Conv2d(192, 384, kernel_size=(1, 1), stride=(1, 1))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (3): HEncLayer(
+        (conv): Conv2d(192, 384, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (norm1): Identity()
+        (rewrite): Conv2d(384, 768, kernel_size=(1, 1), stride=(1, 1))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+    )
+    (decoder): ModuleList(
+      (0): HDecLayer(
+        (conv_tr): ConvTranspose2d(384, 192, kernel_size=(8, 1), stride=(4, 1))
+        (norm2): Identity()
+        (rewrite): Conv2d(384, 768, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (1): HDecLayer(
+        (conv_tr): ConvTranspose2d(192, 96, kernel_size=(8, 1), stride=(4, 1))
+        (norm2): Identity()
+        (rewrite): Conv2d(192, 384, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (2): HDecLayer(
+        (conv_tr): ConvTranspose2d(96, 48, kernel_size=(8, 1), stride=(4, 1))
+        (norm2): Identity()
+        (rewrite): Conv2d(96, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (3): HDecLayer(
+        (conv_tr): ConvTranspose2d(48, 16, kernel_size=(8, 1), stride=(4, 1))
+        (norm2): Identity()
+        (rewrite): Conv2d(48, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+    )
+    (tencoder): ModuleList(
+      (0): HEncLayer(
+        (conv): Conv1d(2, 48, kernel_size=(8,), stride=(4,), padding=(2,))
+        (norm1): Identity()
+        (rewrite): Conv1d(48, 96, kernel_size=(1,), stride=(1,))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (1): HEncLayer(
+        (conv): Conv1d(48, 96, kernel_size=(8,), stride=(4,), padding=(2,))
+        (norm1): Identity()
+        (rewrite): Conv1d(96, 192, kernel_size=(1,), stride=(1,))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (2): HEncLayer(
+        (conv): Conv1d(96, 192, kernel_size=(8,), stride=(4,), padding=(2,))
+        (norm1): Identity()
+        (rewrite): Conv1d(192, 384, kernel_size=(1,), stride=(1,))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (3): HEncLayer(
+        (conv): Conv1d(192, 384, kernel_size=(8,), stride=(4,), padding=(2,))
+        (norm1): Identity()
+        (rewrite): Conv1d(384, 768, kernel_size=(1,), stride=(1,))
+        (norm2): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+    )
+    (tdecoder): ModuleList(
+      (0): HDecLayer(
+        (conv_tr): ConvTranspose1d(384, 192, kernel_size=(8,), stride=(4,))
+        (norm2): Identity()
+        (rewrite): Conv1d(384, 768, kernel_size=(3,), stride=(1,), padding=(1,))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(384, 48, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(48, 768, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 768, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (1): HDecLayer(
+        (conv_tr): ConvTranspose1d(192, 96, kernel_size=(8,), stride=(4,))
+        (norm2): Identity()
+        (rewrite): Conv1d(192, 384, kernel_size=(3,), stride=(1,), padding=(1,))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(192, 24, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 24, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(24, 384, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 384, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (2): HDecLayer(
+        (conv_tr): ConvTranspose1d(96, 48, kernel_size=(8,), stride=(4,))
+        (norm2): Identity()
+        (rewrite): Conv1d(96, 192, kernel_size=(3,), stride=(1,), padding=(1,))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(96, 12, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 12, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(12, 192, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 192, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+      (3): HDecLayer(
+        (conv_tr): ConvTranspose1d(48, 8, kernel_size=(8,), stride=(4,))
+        (norm2): Identity()
+        (rewrite): Conv1d(48, 96, kernel_size=(3,), stride=(1,), padding=(1,))
+        (norm1): Identity()
+        (dconv): DConv(
+          (layers): ModuleList(
+            (0): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(1,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+            (1): Sequential(
+              (0): Conv1d(48, 6, kernel_size=(3,), stride=(1,), padding=(2,), dilation=(2,))
+              (1): GroupNorm(1, 6, eps=1e-05, affine=True)
+              (2): GELU(approximate='none')
+              (3): Conv1d(6, 96, kernel_size=(1,), stride=(1,))
+              (4): GroupNorm(1, 96, eps=1e-05, affine=True)
+              (5): GLU(dim=1)
+              (6): LayerScale()
+            )
+          )
+        )
+      )
+    )
+    (freq_emb): ScaledEmbedding(
+      (embedding): Embedding(512, 48)
+    )
+    (channel_upsampler): Conv1d(384, 512, kernel_size=(1,), stride=(1,))
+    (channel_downsampler): Conv1d(512, 384, kernel_size=(1,), stride=(1,))
+    (channel_upsampler_t): Conv1d(384, 512, kernel_size=(1,), stride=(1,))
+    (channel_downsampler_t): Conv1d(512, 384, kernel_size=(1,), stride=(1,))
+    (crosstransformer): CrossTransformerEncoder(
+      (norm_in): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+      (norm_in_t): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+      (layers): ModuleList(
+        (0): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+        (1): CrossTransformerEncoderLayer(
+          (cross_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+        )
+        (2): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+        (3): CrossTransformerEncoderLayer(
+          (cross_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+        )
+        (4): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+      )
+      (layers_t): ModuleList(
+        (0): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+        (1): CrossTransformerEncoderLayer(
+          (cross_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+        )
+        (2): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+        (3): CrossTransformerEncoderLayer(
+          (cross_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+        )
+        (4): MyTransformerEncoderLayer(
+          (self_attn): MultiheadAttention(
+            (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+          )
+          (linear1): Linear(in_features=512, out_features=2048, bias=True)
+          (dropout): Dropout(p=0.02, inplace=False)
+          (linear2): Linear(in_features=2048, out_features=512, bias=True)
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (dropout1): Dropout(p=0.02, inplace=False)
+          (dropout2): Dropout(p=0.02, inplace=False)
+          (norm_out): MyGroupNorm(1, 512, eps=1e-05, affine=True)
+          (gamma_1): LayerScale()
+          (gamma_2): LayerScale()
+        )
+      )
+    )
+  )
+  (clap): ClapModel(
+    (text_model): ClapTextModel(
+      (embeddings): ClapTextEmbeddings(
+        (word_embeddings): Embedding(50265, 768, padding_idx=1)
+        (position_embeddings): Embedding(514, 768, padding_idx=1)
+        (token_type_embeddings): Embedding(1, 768)
+        (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (encoder): ClapTextEncoder(
+        (layer): ModuleList(
+          (0-11): 12 x ClapTextLayer(
+            (attention): ClapTextAttention(
+              (self): ClapTextSelfAttention(
+                (query): Linear(in_features=768, out_features=768, bias=True)
+                (key): Linear(in_features=768, out_features=768, bias=True)
+                (value): Linear(in_features=768, out_features=768, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (output): ClapTextSelfOutput(
+                (dense): Linear(in_features=768, out_features=768, bias=True)
+                (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+            (intermediate): ClapTextIntermediate(
+              (dense): Linear(in_features=768, out_features=3072, bias=True)
+              (intermediate_act_fn): GELUActivation()
+            )
+            (output): ClapTextOutput(
+              (dense): Linear(in_features=3072, out_features=768, bias=True)
+              (LayerNorm): LayerNorm((768,), eps=1e-12, elementwise_affine=True)
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+        )
+      )
+      (pooler): ClapTextPooler(
+        (dense): Linear(in_features=768, out_features=768, bias=True)
+        (activation): Tanh()
+      )
+    )
+    (text_projection): ClapProjectionLayer(
+      (linear1): Linear(in_features=768, out_features=512, bias=True)
+      (activation): ReLU()
+      (linear2): Linear(in_features=512, out_features=512, bias=True)
+    )
+    (audio_model): ClapAudioModel(
+      (audio_encoder): ClapAudioEncoder(
+        (patch_embed): ClapAudioPatchEmbed(
+          (proj): Conv2d(1, 96, kernel_size=(4, 4), stride=(4, 4))
+          (norm): LayerNorm((96,), eps=1e-05, elementwise_affine=True)
+        )
+        (layers): ModuleList(
+          (0): ClapAudioStage(
+            (blocks): ModuleList(
+              (0-1): 2 x ClapAudioLayer(
+                (layernorm_before): LayerNorm((96,), eps=1e-05, elementwise_affine=True)
+                (attention): ClapAudioAttention(
+                  (self): ClapAudioSelfAttention(
+                    (query): Linear(in_features=96, out_features=96, bias=True)
+                    (key): Linear(in_features=96, out_features=96, bias=True)
+                    (value): Linear(in_features=96, out_features=96, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                  (output): ClapAudioSelfOutput(
+                    (dense): Linear(in_features=96, out_features=96, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (drop_path): Identity()
+                (layernorm_after): LayerNorm((96,), eps=1e-05, elementwise_affine=True)
+                (intermediate): ClapAudioIntermediate(
+                  (dense): Linear(in_features=96, out_features=384, bias=True)
+                  (intermediate_act_fn): GELUActivation()
+                )
+                (output): ClapAudioOutput(
+                  (dense): Linear(in_features=384, out_features=96, bias=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+              )
+            )
+            (downsample): ClapAudioPatchMerging(
+              (reduction): Linear(in_features=384, out_features=192, bias=False)
+              (norm): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (1): ClapAudioStage(
+            (blocks): ModuleList(
+              (0-1): 2 x ClapAudioLayer(
+                (layernorm_before): LayerNorm((192,), eps=1e-05, elementwise_affine=True)
+                (attention): ClapAudioAttention(
+                  (self): ClapAudioSelfAttention(
+                    (query): Linear(in_features=192, out_features=192, bias=True)
+                    (key): Linear(in_features=192, out_features=192, bias=True)
+                    (value): Linear(in_features=192, out_features=192, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                  (output): ClapAudioSelfOutput(
+                    (dense): Linear(in_features=192, out_features=192, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (drop_path): Identity()
+                (layernorm_after): LayerNorm((192,), eps=1e-05, elementwise_affine=True)
+                (intermediate): ClapAudioIntermediate(
+                  (dense): Linear(in_features=192, out_features=768, bias=True)
+                  (intermediate_act_fn): GELUActivation()
+                )
+                (output): ClapAudioOutput(
+                  (dense): Linear(in_features=768, out_features=192, bias=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+              )
+            )
+            (downsample): ClapAudioPatchMerging(
+              (reduction): Linear(in_features=768, out_features=384, bias=False)
+              (norm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (2): ClapAudioStage(
+            (blocks): ModuleList(
+              (0-5): 6 x ClapAudioLayer(
+                (layernorm_before): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+                (attention): ClapAudioAttention(
+                  (self): ClapAudioSelfAttention(
+                    (query): Linear(in_features=384, out_features=384, bias=True)
+                    (key): Linear(in_features=384, out_features=384, bias=True)
+                    (value): Linear(in_features=384, out_features=384, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                  (output): ClapAudioSelfOutput(
+                    (dense): Linear(in_features=384, out_features=384, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (drop_path): Identity()
+                (layernorm_after): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+                (intermediate): ClapAudioIntermediate(
+                  (dense): Linear(in_features=384, out_features=1536, bias=True)
+                  (intermediate_act_fn): GELUActivation()
+                )
+                (output): ClapAudioOutput(
+                  (dense): Linear(in_features=1536, out_features=384, bias=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+              )
+            )
+            (downsample): ClapAudioPatchMerging(
+              (reduction): Linear(in_features=1536, out_features=768, bias=False)
+              (norm): LayerNorm((1536,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (3): ClapAudioStage(
+            (blocks): ModuleList(
+              (0-1): 2 x ClapAudioLayer(
+                (layernorm_before): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+                (attention): ClapAudioAttention(
+                  (self): ClapAudioSelfAttention(
+                    (query): Linear(in_features=768, out_features=768, bias=True)
+                    (key): Linear(in_features=768, out_features=768, bias=True)
+                    (value): Linear(in_features=768, out_features=768, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                  (output): ClapAudioSelfOutput(
+                    (dense): Linear(in_features=768, out_features=768, bias=True)
+                    (dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (drop_path): Identity()
+                (layernorm_after): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+                (intermediate): ClapAudioIntermediate(
+                  (dense): Linear(in_features=768, out_features=3072, bias=True)
+                  (intermediate_act_fn): GELUActivation()
+                )
+                (output): ClapAudioOutput(
+                  (dense): Linear(in_features=3072, out_features=768, bias=True)
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+              )
+            )
+          )
+        )
+        (batch_norm): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (norm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (avgpool): AdaptiveAvgPool1d(output_size=1)
+      )
+    )
+    (audio_projection): ClapProjectionLayer(
+      (linear1): Linear(in_features=768, out_features=512, bias=True)
+      (activation): ReLU()
+      (linear2): Linear(in_features=512, out_features=512, bias=True)
+    )
+  )
+  (text_attn): TextCrossAttention(
+    (q_proj): Linear(in_features=384, out_features=384, bias=True)
+    (k_proj): Linear(in_features=512, out_features=384, bias=True)
+    (v_proj): Linear(in_features=512, out_features=384, bias=True)
+    (attn): MultiheadAttention(
+      (out_proj): NonDynamicallyQuantizableLinear(in_features=384, out_features=384, bias=True)
+    )
+    (out_mlp): Sequential(
+      (0): Linear(in_features=384, out_features=384, bias=True)
+      (1): GELU(approximate='none')
+      (2): Linear(in_features=384, out_features=384, bias=True)
+    )
+    (norm_q): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+    (norm_out): LayerNorm((384,), eps=1e-05, elementwise_affine=True)
+  )
+  (freq_decoder): FreqDecoder(
+    (layers): ModuleList(
+      (0): Sequential(
+        (0): ConvTranspose2d(384, 192, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (1): GroupNorm(1, 192, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (1): Sequential(
+        (0): ConvTranspose2d(192, 96, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (1): GroupNorm(1, 96, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (2): Sequential(
+        (0): ConvTranspose2d(96, 48, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (3): Sequential(
+        (0): ConvTranspose2d(48, 4, kernel_size=(8, 1), stride=(4, 1), padding=(2, 0))
+        (1): Identity()
+        (2): Identity()
+      )
+    )
+  )
+  (time_decoder): TimeDecoder(
+    (layers): ModuleList(
+      (0): Sequential(
+        (0): ConvTranspose1d(384, 192, kernel_size=(8,), stride=(4,), padding=(2,))
+        (1): GroupNorm(1, 192, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (1): Sequential(
+        (0): ConvTranspose1d(192, 96, kernel_size=(8,), stride=(4,), padding=(2,))
+        (1): GroupNorm(1, 96, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (2): Sequential(
+        (0): ConvTranspose1d(96, 48, kernel_size=(8,), stride=(4,), padding=(2,))
+        (1): GroupNorm(1, 48, eps=1e-05, affine=True)
+        (2): GELU(approximate='none')
+      )
+      (3): Sequential(
+        (0): ConvTranspose1d(48, 4, kernel_size=(8,), stride=(4,), padding=(2,))
+        (1): Identity()
+        (2): Identity()
+      )
+    )
+  )
+  (freq_out): Conv2d(4, 2, kernel_size=(1, 1), stride=(1, 1))
+  (time_out): Conv1d(4, 2, kernel_size=(1,), stride=(1,))
+)
