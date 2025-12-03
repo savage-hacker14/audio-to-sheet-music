@@ -29,7 +29,7 @@ training:
   loss_weights:
     sdr: 0.9                                          # Weight for SDR loss             
     sisdr_weight: 0.1                                 # Weight for SI-SDR loss, total loss is (sdr_weight * sdr) + (sisdr_weight * si_sdr)
-  resume_from: null                                   # Path to checkpoint to resume training from (set to null to train from scratch)
+  resume_from: checkpoints/2025_11_30_batch4/best_model.pt                                   # Path to checkpoint to resume training from (set to null to train from scratch)
 
 wandb:
   use_wandb: True                                     # Whether to use Weights & Biases for experiment tracking       
@@ -38,4 +38,4 @@ wandb:
   log_every: 50                                       # Log to wandb every N batches
   validate_every: 1                                   # Validate every N epochs
   save_every: 5                                       # Save model checkpoint every N epochs
-  checkpoint_dir: ../checkpoints                      # Directory to save model checkpoints           
+  checkpoint_dir: checkpoints/2025_12_03/             # Directory to save model checkpoints           

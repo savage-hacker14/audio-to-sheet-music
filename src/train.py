@@ -195,15 +195,27 @@ def load_checkpoint(
         scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
         checkpoint_path: str,
 ) -> int:
-    """Load a checkpoint and return the epoch number."""
+    """
+    Load a checkpoint and return the epoch number.
+    
+    Ignores any unused weights (e.g. if ClapTextModelWithProjection is being used but checkpoint has ClapModel with audio encoder weights).
+    Also applies to optimizer and scheduler.
+    """
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"], strict=False)
 
-    if optimizer is not None:
+    # Try loading optimizer and scheduler state, but ignore mismatches (due to new CLAP model, etc)
+    try:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-    if scheduler is not None:
-        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+    except Exception as e:
+        print("Skipping optimizer state...")
 
+    # Same idea for scheduler
+    try:
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+    except:
+        print("Skipping scheduler state...")
+        
     print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
     return checkpoint["epoch"]
 
