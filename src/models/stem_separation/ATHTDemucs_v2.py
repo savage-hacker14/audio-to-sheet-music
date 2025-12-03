@@ -11,13 +11,12 @@ Changes from v1:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List
+from typing import List, Any
 from fractions import Fraction
 from einops import rearrange
 
 from demucs.htdemucs import HTDemucs
-from transformers import ClapModel
-
+from transformers import ClapModel, ClapTextModelWithProjection, RobertaTokenizerFast
 
 class TextCrossAttention(nn.Module):
     """Cross-attention: audio features attend to text embeddings."""
@@ -152,8 +151,8 @@ class AudioTextHTDemucs(nn.Module):
     def __init__(
         self,
         htdemucs_model: HTDemucs,
-        clap_encoder: ClapModel,
-        clap_tokenizer,
+        clap_encoder: ClapModel | ClapTextModelWithProjection,
+        clap_tokenizer: RobertaTokenizerFast,
         model_dim: int = 384,
         text_dim: int = 512,
         num_heads: int = 8,
@@ -237,10 +236,16 @@ class AudioTextHTDemucs(nn.Module):
         return x, xt, saved, saved_t, lengths, lengths_t
 
     def _get_clap_embeddings(self, text: List[str], device):
-        with torch.no_grad():
-            inputs = self.tokenizer(text, padding=True, return_tensors="pt")
-            inputs = {k: v.to(device) for k, v in inputs.items()}
-            return self.clap.get_text_features(**inputs)
+        inputs = self.tokenizer(text, padding=True, return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        if isinstance(self.clap, ClapModel):
+            # Use get_text_features for ClapModel
+            with torch.no_grad():
+                return self.clap.get_text_features(**inputs)
+        else:
+            # Use forward pass for ClapTextModelWithProjection
+            with torch.no_grad():
+                return self.clap.forward(**inputs).text_embeds
 
     def forward(self, wav, text):
         """

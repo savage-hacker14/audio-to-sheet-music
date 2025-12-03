@@ -8,7 +8,7 @@ from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 
 from demucs import pretrained
-from transformers import AutoTokenizer, ClapModel
+from transformers import AutoTokenizer, ClapModel, ClapTextModelWithProjection
 
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.loss import combined_loss, sdr_loss
@@ -338,7 +338,8 @@ def train(config_path):
     htdemucs = pretrained.get_model('htdemucs').models[0]
 
     print("Loading CLAP model...")
-    clap = ClapModel.from_pretrained("laion/clap-htsat-unfused")
+    #clap = ClapModel.from_pretrained("laion/clap-htsat-unfused")
+    clap = ClapTextModelWithProjection.from_pretrained("laion/clap-htsat-unfused")          # More memory efficient than loading full ClapModel (text + audio)
     tokenizer = AutoTokenizer.from_pretrained("laion/clap-htsat-unfused")
 
     # Create model
