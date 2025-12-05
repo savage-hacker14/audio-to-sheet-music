@@ -1,5 +1,8 @@
 demucs==4.0.1
+huggingface_hub
+laion_clap
 librosa
+loralib
 matplotlib==3.10.1
 numpy==2.1.3
 pathlib

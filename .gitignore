@@ -2,6 +2,10 @@
 data/*
 results/*
 checkpoints/*
+clapsep_model/*
+
+# macOS
+.DS_Store
 
 # Wandb ignores
 wandb/*
@@ -213,3 +217,153 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+musdb18/test/Al James - Schoolboy Facination.stem.mp4
+musdb18/test/AM Contra - Heart Peripheral.stem.mp4
+musdb18/test/Angels In Amplifiers - I'm Alright.stem.mp4
+musdb18/test/Arise - Run Run Run.stem.mp4
+musdb18/test/Ben Carrigan - We'll Talk About It All Tonight.stem.mp4
+musdb18/test/BKS - Bulldozer.stem.mp4
+musdb18/test/BKS - Too Much.stem.mp4
+musdb18/test/Bobby Nobody - Stitch Up.stem.mp4
+musdb18/test/Buitraker - Revo X.stem.mp4
+musdb18/test/Carlos Gonzalez - A Place For Us.stem.mp4
+musdb18/test/Cristina Vane - So Easy.stem.mp4
+musdb18/test/Detsky Sad - Walkie Talkie.stem.mp4
+musdb18/test/Enda Reilly - Cur An Long Ag Seol.stem.mp4
+musdb18/test/Forkupines - Semantics.stem.mp4
+musdb18/test/Georgia Wonder - Siren.stem.mp4
+musdb18/test/Girls Under Glass - We Feel Alright.stem.mp4
+musdb18/test/Hollow Ground - Ill Fate.stem.mp4
+musdb18/test/James Elder & Mark M Thompson - The English Actor.stem.mp4
+musdb18/test/Juliet's Rescue - Heartbeats.stem.mp4
+musdb18/test/Little Chicago's Finest - My Own.stem.mp4
+musdb18/test/Louis Cressy Band - Good Time.stem.mp4
+musdb18/test/Lyndsey Ollard - Catching Up.stem.mp4
+musdb18/test/M.E.R.C. Music - Knockout.stem.mp4
+musdb18/test/Moosmusic - Big Dummy Shake.stem.mp4
+musdb18/test/Motor Tapes - Shore.stem.mp4
+musdb18/test/Mu - Too Bright.stem.mp4
+musdb18/test/Nerve 9 - Pray For The Rain.stem.mp4
+musdb18/test/PR - Happy Daze.stem.mp4
+musdb18/test/PR - Oh No.stem.mp4
+musdb18/test/Punkdisco - Oral Hygiene.stem.mp4
+musdb18/test/Raft Monk - Tiring.stem.mp4
+musdb18/test/Sambasevam Shanmugam - Kaathaadi.stem.mp4
+musdb18/test/Secretariat - Borderline.stem.mp4
+musdb18/test/Secretariat - Over The Top.stem.mp4
+musdb18/test/Side Effects Project - Sing With Me.stem.mp4
+musdb18/test/Signe Jakobsen - What Have You Done To Me.stem.mp4
+musdb18/test/Skelpolu - Resurrection.stem.mp4
+musdb18/test/Speak Softly - Broken Man.stem.mp4
+musdb18/test/Speak Softly - Like Horses.stem.mp4
+musdb18/test/The Doppler Shift - Atrophy.stem.mp4
+musdb18/test/The Easton Ellises - Falcon 69.stem.mp4
+musdb18/test/The Easton Ellises (Baumi) - SDRNR.stem.mp4
+musdb18/test/The Long Wait - Dark Horses.stem.mp4
+musdb18/test/The Mountaineering Club - Mallory.stem.mp4
+musdb18/test/The Sunshine Garcia Band - For I Am The Moon.stem.mp4
+musdb18/test/Timboz - Pony.stem.mp4
+musdb18/test/Tom McKenzie - Directions.stem.mp4
+musdb18/test/Triviul feat. The Fiend - Widow.stem.mp4
+musdb18/test/We Fell From The Sky - Not You.stem.mp4
+musdb18/test/Zeno - Signs.stem.mp4
+musdb18/train/A Classic Education - NightOwl.stem.mp4
+musdb18/train/Actions - Devil's Words.stem.mp4
+musdb18/train/Actions - One Minute Smile.stem.mp4
+musdb18/train/Actions - South Of The Water.stem.mp4
+musdb18/train/Aimee Norwich - Child.stem.mp4
+musdb18/train/Alexander Ross - Goodbye Bolero.stem.mp4
+musdb18/train/Alexander Ross - Velvet Curtain.stem.mp4
+musdb18/train/Angela Thomas Wade - Milk Cow Blues.stem.mp4
+musdb18/train/ANiMAL - Clinic A.stem.mp4
+musdb18/train/ANiMAL - Easy Tiger.stem.mp4
+musdb18/train/ANiMAL - Rockshow.stem.mp4
+musdb18/train/Atlantis Bound - It Was My Fault For Waiting.stem.mp4
+musdb18/train/Auctioneer - Our Future Faces.stem.mp4
+musdb18/train/AvaLuna - Waterduct.stem.mp4
+musdb18/train/BigTroubles - Phantom.stem.mp4
+musdb18/train/Bill Chudziak - Children Of No-one.stem.mp4
+musdb18/train/Black Bloc - If You Want Success.stem.mp4
+musdb18/train/Celestial Shore - Die For Us.stem.mp4
+musdb18/train/Chris Durban - Celebrate.stem.mp4
+musdb18/train/Clara Berry And Wooldog - Air Traffic.stem.mp4
+musdb18/train/Clara Berry And Wooldog - Stella.stem.mp4
+musdb18/train/Clara Berry And Wooldog - Waltz For My Victims.stem.mp4
+musdb18/train/Cnoc An Tursa - Bannockburn.stem.mp4
+musdb18/train/Creepoid - OldTree.stem.mp4
+musdb18/train/Dark Ride - Burning Bridges.stem.mp4
+musdb18/train/Dreamers Of The Ghetto - Heavy Love.stem.mp4
+musdb18/train/Drumtracks - Ghost Bitch.stem.mp4
+musdb18/train/Faces On Film - Waiting For Ga.stem.mp4
+musdb18/train/Fergessen - Back From The Start.stem.mp4
+musdb18/train/Fergessen - Nos Palpitants.stem.mp4
+musdb18/train/Fergessen - The Wind.stem.mp4
+musdb18/train/Flags - 54.stem.mp4
+musdb18/train/Giselle - Moss.stem.mp4
+musdb18/train/Grants - PunchDrunk.stem.mp4
+musdb18/train/Helado Negro - Mitad Del Mundo.stem.mp4
+musdb18/train/Hezekiah Jones - Borrowed Heart.stem.mp4
+musdb18/train/Hollow Ground - Left Blind.stem.mp4
+musdb18/train/Hop Along - Sister Cities.stem.mp4
+musdb18/train/Invisible Familiars - Disturbing Wildlife.stem.mp4
+musdb18/train/James May - All Souls Moon.stem.mp4
+musdb18/train/James May - Dont Let Go.stem.mp4
+musdb18/train/James May - If You Say.stem.mp4
+musdb18/train/James May - On The Line.stem.mp4
+musdb18/train/Jay Menon - Through My Eyes.stem.mp4
+musdb18/train/Johnny Lokke - Promises & Lies.stem.mp4
+musdb18/train/Johnny Lokke - Whisper To A Scream.stem.mp4
+musdb18/train/Jokers, Jacks & Kings - Sea Of Leaves.stem.mp4
+musdb18/train/Leaf - Come Around.stem.mp4
+musdb18/train/Leaf - Summerghost.stem.mp4
+musdb18/train/Leaf - Wicked.stem.mp4
+musdb18/train/Lushlife - Toynbee Suite.stem.mp4
+musdb18/train/Matthew Entwistle - Dont You Ever.stem.mp4
+musdb18/train/Meaxic - Take A Step.stem.mp4
+musdb18/train/Meaxic - You Listen.stem.mp4
+musdb18/train/Music Delta - 80s Rock.stem.mp4
+musdb18/train/Music Delta - Beatles.stem.mp4
+musdb18/train/Music Delta - Britpop.stem.mp4
+musdb18/train/Music Delta - Country1.stem.mp4
+musdb18/train/Music Delta - Country2.stem.mp4
+musdb18/train/Music Delta - Disco.stem.mp4
+musdb18/train/Music Delta - Gospel.stem.mp4
+musdb18/train/Music Delta - Grunge.stem.mp4
+musdb18/train/Music Delta - Hendrix.stem.mp4
+musdb18/train/Music Delta - Punk.stem.mp4
+musdb18/train/Music Delta - Reggae.stem.mp4
+musdb18/train/Music Delta - Rock.stem.mp4
+musdb18/train/Music Delta - Rockabilly.stem.mp4
+musdb18/train/Night Panther - Fire.stem.mp4
+musdb18/train/North To Alaska - All The Same.stem.mp4
+musdb18/train/Patrick Talbot - A Reason To Leave.stem.mp4
+musdb18/train/Patrick Talbot - Set Me Free.stem.mp4
+musdb18/train/Phre The Eon - Everybody's Falling Apart.stem.mp4
+musdb18/train/Port St Willow - Stay Even.stem.mp4
+musdb18/train/Remember December - C U Next Time.stem.mp4
+musdb18/train/Secret Mountains - High Horse.stem.mp4
+musdb18/train/Skelpolu - Human Mistakes.stem.mp4
+musdb18/train/Skelpolu - Together Alone.stem.mp4
+musdb18/train/Snowmine - Curfews.stem.mp4
+musdb18/train/Spike Mullings - Mike's Sulking.stem.mp4
+musdb18/train/St Vitus - Word Gets Around.stem.mp4
+musdb18/train/Steven Clark - Bounty.stem.mp4
+musdb18/train/Strand Of Oaks - Spacestation.stem.mp4
+musdb18/train/Sweet Lights - You Let Me Down.stem.mp4
+musdb18/train/Swinging Steaks - Lost My Way.stem.mp4
+musdb18/train/The Districts - Vermont.stem.mp4
+musdb18/train/The Long Wait - Back Home To Blue.stem.mp4
+musdb18/train/The Scarlet Brand - Les Fleurs Du Mal.stem.mp4
+musdb18/train/The So So Glos - Emergency.stem.mp4
+musdb18/train/The Wrong'Uns - Rothko.stem.mp4
+musdb18/train/Tim Taler - Stalker.stem.mp4
+musdb18/train/Titanium - Haunted Age.stem.mp4
+musdb18/train/Traffic Experiment - Once More (With Feeling).stem.mp4
+musdb18/train/Traffic Experiment - Sirens.stem.mp4
+musdb18/train/Triviul - Angelsaint.stem.mp4
+musdb18/train/Triviul - Dorothy.stem.mp4
+musdb18/train/Voelund - Comfort Lives In Belief.stem.mp4
+musdb18/train/Wall Of Death - Femme.stem.mp4
+musdb18/train/Young Griffo - Blood To Bone.stem.mp4
+musdb18/train/Young Griffo - Facade.stem.mp4
+musdb18/train/Young Griffo - Pennies.stem.mp4

@@ -1,15 +1,459 @@
 
-from typing import Union
+from typing import Union, Optional, Dict, List
 from pathlib import Path
 import yaml
 
-# YAML config load
+import torch
+import torch.nn.functional as F
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend for server/training use
+
+
+# ============================================================================
+# YAML Config
+# ============================================================================
+
 def load_config(file_path: Union[str, Path]) -> dict:
     """Load a YAML configuration file."""
     with open(file_path, 'r') as f:
         config = yaml.safe_load(f)
         
     return config
+
+
+# ============================================================================
+# Spectrogram Utilities
+# ============================================================================
+
+def compute_spectrogram(
+    waveform: torch.Tensor,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+    power: float = 2.0,
+    to_db: bool = True,
+    top_db: float = 80.0,
+) -> torch.Tensor:
+    """
+    Compute spectrogram from waveform using STFT.
+    
+    Args:
+        waveform: (C, T) or (T,) audio waveform
+        n_fft: FFT window size
+        hop_length: Hop length between frames
+        power: Exponent for magnitude (1.0 for magnitude, 2.0 for power)
+        to_db: Convert to decibel scale
+        top_db: Threshold for dynamic range in dB
+        
+    Returns:
+        (F, T') spectrogram tensor
+    """
+    # Handle stereo by taking mean to mono
+    if waveform.dim() == 2:
+        waveform = waveform.mean(dim=0)  # (T,)
+    
+    # Move to CPU for STFT computation
+    waveform = waveform.cpu()
+    
+    # Compute STFT
+    window = torch.hann_window(n_fft)
+    stft = torch.stft(
+        waveform, 
+        n_fft=n_fft,
+        hop_length=hop_length,
+        win_length=n_fft,
+        window=window,
+        return_complex=True,
+        center=True,
+        pad_mode='reflect'
+    )
+    
+    # Compute magnitude spectrogram
+    spec = torch.abs(stft).pow(power)
+    
+    # Convert to dB
+    if to_db:
+        spec = amplitude_to_db(spec, top_db=top_db)
+    
+    return spec
+
+
+def amplitude_to_db(
+    spec: torch.Tensor,
+    ref: float = 1.0,
+    amin: float = 1e-10,
+    top_db: float = 80.0,
+) -> torch.Tensor:
+    """Convert amplitude/power spectrogram to decibel scale."""
+    spec_db = 10.0 * torch.log10(torch.clamp(spec, min=amin) / ref)
+    
+    # Clip to top_db range
+    max_val = spec_db.max()
+    spec_db = torch.clamp(spec_db, min=max_val - top_db)
+    
+    return spec_db
+
+
+def plot_spectrogram(
+    spec: torch.Tensor,
+    sample_rate: int = 44100,
+    hop_length: int = 512,
+    title: str = "Spectrogram",
+    figsize: tuple = (10, 4),
+    cmap: str = "magma",
+    colorbar: bool = True,
+) -> plt.Figure:
+    """
+    Plot a single spectrogram.
+    
+    Args:
+        spec: (F, T) spectrogram tensor (in dB scale)
+        sample_rate: Audio sample rate
+        hop_length: Hop length used for STFT
+        title: Plot title
+        figsize: Figure size
+        cmap: Colormap for spectrogram
+        colorbar: Whether to show colorbar
+        
+    Returns:
+        matplotlib Figure object
+    """
+    spec_np = spec.cpu().numpy() if isinstance(spec, torch.Tensor) else spec
+    
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Compute time and frequency axes
+    n_frames = spec_np.shape[1]
+    n_freqs = spec_np.shape[0]
+    time_max = n_frames * hop_length / sample_rate
+    freq_max = sample_rate / 2  # Nyquist frequency
+    
+    img = ax.imshow(
+        spec_np,
+        aspect='auto',
+        origin='lower',
+        cmap=cmap,
+        extent=[0, time_max, 0, freq_max / 1000]  # freq in kHz
+    )
+    
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Frequency (kHz)')
+    ax.set_title(title)
+    
+    if colorbar:
+        cbar = fig.colorbar(img, ax=ax, format='%+2.0f dB')
+        cbar.set_label('Magnitude (dB)')
+    
+    fig.tight_layout()
+    return fig
+
+
+def plot_spectrogram_comparison(
+    spectrograms: Dict[str, torch.Tensor],
+    sample_rate: int = 44100,
+    hop_length: int = 512,
+    figsize: tuple = (14, 3),
+    cmap: str = "magma",
+    suptitle: Optional[str] = None,
+) -> plt.Figure:
+    """
+    Plot multiple spectrograms side by side for comparison.
+    
+    Args:
+        spectrograms: Dict mapping names to spectrogram tensors
+        sample_rate: Audio sample rate
+        hop_length: Hop length used for STFT
+        figsize: Figure size (width, height per row)
+        cmap: Colormap for spectrograms
+        suptitle: Super title for the figure
+        
+    Returns:
+        matplotlib Figure object
+    """
+    n_specs = len(spectrograms)
+    fig, axes = plt.subplots(1, n_specs, figsize=(figsize[0], figsize[1]))
+    
+    if n_specs == 1:
+        axes = [axes]
+    
+    # Find global min/max for consistent colorbar
+    all_specs = [s.cpu().numpy() if isinstance(s, torch.Tensor) else s 
+                 for s in spectrograms.values()]
+    vmin = min(s.min() for s in all_specs)
+    vmax = max(s.max() for s in all_specs)
+    
+    for ax, (name, spec) in zip(axes, spectrograms.items()):
+        spec_np = spec.cpu().numpy() if isinstance(spec, torch.Tensor) else spec
+        
+        n_frames = spec_np.shape[1]
+        time_max = n_frames * hop_length / sample_rate
+        freq_max = sample_rate / 2
+        
+        img = ax.imshow(
+            spec_np,
+            aspect='auto',
+            origin='lower',
+            cmap=cmap,
+            extent=[0, time_max, 0, freq_max / 1000],
+            vmin=vmin,
+            vmax=vmax,
+        )
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Frequency (kHz)')
+        ax.set_title(name)
+    
+    # Add single colorbar
+    fig.colorbar(img, ax=axes, format='%+2.0f dB', label='Magnitude (dB)')
+    
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=12, y=1.02)
+    
+    fig.tight_layout()
+    return fig
+
+
+def plot_separation_spectrograms(
+    mixture: torch.Tensor,
+    estimated: torch.Tensor,
+    reference: torch.Tensor,
+    stem_name: str = "stem",
+    sample_rate: int = 44100,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+) -> plt.Figure:
+    """
+    Create a comparison spectrogram plot for stem separation.
+    Shows mixture, estimated, reference, and difference.
+    
+    Args:
+        mixture: (C, T) mixture waveform
+        estimated: (C, T) estimated stem waveform
+        reference: (C, T) ground truth stem waveform
+        stem_name: Name of the stem for title
+        sample_rate: Audio sample rate
+        n_fft: FFT window size
+        hop_length: Hop length
+        
+    Returns:
+        matplotlib Figure object
+    """
+    # Compute spectrograms
+    spec_mix = compute_spectrogram(mixture, n_fft=n_fft, hop_length=hop_length)
+    spec_est = compute_spectrogram(estimated, n_fft=n_fft, hop_length=hop_length)
+    spec_ref = compute_spectrogram(reference, n_fft=n_fft, hop_length=hop_length)
+    
+    # Create comparison plot
+    spectrograms = {
+        "Mixture": spec_mix,
+        f"Estimated ({stem_name})": spec_est,
+        f"Ground Truth ({stem_name})": spec_ref,
+    }
+    
+    fig = plot_spectrogram_comparison(
+        spectrograms,
+        sample_rate=sample_rate,
+        hop_length=hop_length,
+        suptitle=f"Stem Separation: {stem_name.capitalize()}"
+    )
+    
+    return fig
+
+
+def plot_all_stems_spectrograms(
+    mixture: torch.Tensor,
+    estimated_stems: Dict[str, torch.Tensor],
+    reference_stems: Dict[str, torch.Tensor],
+    sample_rate: int = 44100,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+    figsize: tuple = (16, 12),
+) -> plt.Figure:
+    """
+    Create a grid of spectrograms for all stems.
+    
+    Args:
+        mixture: (C, T) mixture waveform
+        estimated_stems: Dict mapping stem names to estimated (C, T) waveforms
+        reference_stems: Dict mapping stem names to reference (C, T) waveforms
+        sample_rate: Audio sample rate
+        n_fft: FFT window size
+        hop_length: Hop length
+        figsize: Figure size
+        
+    Returns:
+        matplotlib Figure object
+    """
+    stem_names = list(estimated_stems.keys())
+    n_stems = len(stem_names)
+    
+    # Create grid: rows = stems, cols = [Estimated, Ground Truth]
+    fig, axes = plt.subplots(n_stems, 2, figsize=figsize)
+    
+    if n_stems == 1:
+        axes = axes.reshape(1, -1)
+    
+    # Compute mixture spectrogram for reference
+    spec_mix = compute_spectrogram(mixture, n_fft=n_fft, hop_length=hop_length)
+    
+    for row, stem_name in enumerate(stem_names):
+        # Estimated
+        spec_est = compute_spectrogram(
+            estimated_stems[stem_name], n_fft=n_fft, hop_length=hop_length
+        )
+        # Reference
+        spec_ref = compute_spectrogram(
+            reference_stems[stem_name], n_fft=n_fft, hop_length=hop_length
+        )
+        
+        # Get time extent
+        n_frames = spec_est.shape[1]
+        time_max = n_frames * hop_length / sample_rate
+        freq_max = sample_rate / 2
+        
+        # Plot estimated
+        spec_np = spec_est.cpu().numpy()
+        axes[row, 0].imshow(
+            spec_np, aspect='auto', origin='lower', cmap='magma',
+            extent=[0, time_max, 0, freq_max / 1000]
+        )
+        axes[row, 0].set_title(f'{stem_name.capitalize()} - Estimated')
+        axes[row, 0].set_ylabel('Freq (kHz)')
+        
+        # Plot reference
+        spec_np = spec_ref.cpu().numpy()
+        img = axes[row, 1].imshow(
+            spec_np, aspect='auto', origin='lower', cmap='magma',
+            extent=[0, time_max, 0, freq_max / 1000]
+        )
+        axes[row, 1].set_title(f'{stem_name.capitalize()} - Ground Truth')
+        
+    # Set x labels on bottom row
+    axes[-1, 0].set_xlabel('Time (s)')
+    axes[-1, 1].set_xlabel('Time (s)')
+    
+    fig.colorbar(img, ax=axes, format='%+2.0f dB', label='Magnitude (dB)')
+    fig.suptitle('Stem Separation Results', fontsize=14, y=1.0)
+    fig.tight_layout()
+    
+    return fig
+
+
+# ============================================================================
+# Weights & Biases Logging Utilities
+# ============================================================================
+
+def log_spectrogram_to_wandb(
+    fig: plt.Figure,
+    key: str = "spectrogram",
+    step: Optional[int] = None,
+    caption: Optional[str] = None,
+):
+    """
+    Log a matplotlib figure as an image to W&B.
+    
+    Args:
+        fig: matplotlib Figure object
+        key: W&B log key
+        step: Training step (optional)
+        caption: Image caption
+    """
+    import wandb
+    
+    # Convert figure to W&B Image
+    wandb_img = wandb.Image(fig, caption=caption)
+    
+    log_dict = {key: wandb_img}
+    if step is not None:
+        wandb.log(log_dict, step=step)
+    else:
+        wandb.log(log_dict)
+    
+    # Close the figure to free memory
+    plt.close(fig)
+
+
+def log_separation_spectrograms_to_wandb(
+    mixture: torch.Tensor,
+    estimated: torch.Tensor,
+    reference: torch.Tensor,
+    stem_name: str,
+    step: Optional[int] = None,
+    sample_rate: int = 44100,
+):
+    """
+    Log stem separation spectrograms to W&B.
+    
+    Args:
+        mixture: (C, T) mixture waveform
+        estimated: (C, T) estimated stem waveform
+        reference: (C, T) ground truth stem waveform
+        stem_name: Name of the stem
+        step: Training step (optional)
+        sample_rate: Audio sample rate
+    """
+    fig = plot_separation_spectrograms(
+        mixture=mixture,
+        estimated=estimated,
+        reference=reference,
+        stem_name=stem_name,
+        sample_rate=sample_rate,
+    )
+    
+    log_spectrogram_to_wandb(
+        fig=fig,
+        key=f"spectrograms/{stem_name}",
+        step=step,
+        caption=f"Separation for {stem_name}"
+    )
+
+
+def log_all_stems_to_wandb(
+    mixture: torch.Tensor,
+    estimated_stems: Dict[str, torch.Tensor],
+    reference_stems: Dict[str, torch.Tensor],
+    step: Optional[int] = None,
+    sample_rate: int = 44100,
+    log_individual: bool = True,
+    log_combined: bool = True,
+):
+    """
+    Log spectrograms for all stems to W&B.
+    
+    Args:
+        mixture: (C, T) mixture waveform
+        estimated_stems: Dict mapping stem names to estimated (C, T) waveforms
+        reference_stems: Dict mapping stem names to reference (C, T) waveforms
+        step: Training step (optional)
+        sample_rate: Audio sample rate
+        log_individual: Log individual stem comparisons
+        log_combined: Log combined grid of all stems
+    """
+    if log_individual:
+        for stem_name in estimated_stems.keys():
+            log_separation_spectrograms_to_wandb(
+                mixture=mixture,
+                estimated=estimated_stems[stem_name],
+                reference=reference_stems[stem_name],
+                stem_name=stem_name,
+                step=step,
+                sample_rate=sample_rate,
+            )
+    
+    if log_combined:
+        fig = plot_all_stems_spectrograms(
+            mixture=mixture,
+            estimated_stems=estimated_stems,
+            reference_stems=reference_stems,
+            sample_rate=sample_rate,
+        )
+        log_spectrogram_to_wandb(
+            fig=fig,
+            key="spectrograms/all_stems",
+            step=step,
+            caption="All stems separation comparison"
+        )
 
 # --- Audio I/O ---
 

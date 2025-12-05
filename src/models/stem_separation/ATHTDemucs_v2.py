@@ -257,8 +257,8 @@ class AudioTextHTDemucs(nn.Module):
         B = wav.shape[0]
         original_length = wav.shape[-1]
 
-        # Compute spectrogram
-        z = self.htdemucs._spec(wav)
+        # Compute spectrogram (ensure all on same device)
+        z = self.htdemucs._spec(wav).to(device)
         mag = self.htdemucs._magnitude(z).to(device)
         x = mag
 
@@ -307,7 +307,7 @@ class AudioTextHTDemucs(nn.Module):
         z_stereo = z[:, :2, :, :]  # (B, 2, F, T)
         phase = z_stereo / (mag_stereo + 1e-8)  # Complex phase
         masked_z = masked_spec * phase  # Apply mask while preserving phase
-        freq_wav = self.htdemucs._ispec(masked_z, original_length)
+        freq_wav = self.htdemucs._ispec(masked_z, original_length).to(device)
 
         # Time decoder
         xt_dec = self.time_decoder(xt_cond, saved_t_rev, lengths_t_rev)
