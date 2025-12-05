@@ -532,6 +532,9 @@ def train(config_path):
                 dataloader=val_loader,
                 device=device,
                 use_amp=use_amp,
+                use_L1_cmb_loss=use_L1_cmb_loss,
+                l1_sdr_weight=l1_sdr_weight,
+                l1_weight=l1_weight,
                 sdr_weight=sdr_weight,
                 sisdr_weight=sisdr_weight,
             )
