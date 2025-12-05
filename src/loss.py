@@ -125,3 +125,38 @@ def combined_loss(
     }
 
     return total, metrics
+
+
+def combined_L1_sdr_loss(
+        estimated: torch.Tensor,
+        target: torch.Tensor,
+        sdr_weight: float = 1.0,
+        l1_weight: float = 0.05
+) -> Tuple[torch.Tensor, Dict[str, float]]:
+    """
+    Combined SDR and L1 loss.
+
+    Args:
+        estimated: Estimated audio (batch, channels, time)
+        target: Target audio (batch, channels, time)
+        sdr_weight: Weight for SDR loss (default 0.9)
+        l1_weight: Weight for SI-SDR loss (default 0.1)
+    Returns:
+        total_loss: Combined loss for backpropagation
+        metrics: Dictionary of metrics for logging
+    """
+    sdr = sdr_loss(estimated, target)
+    sisdr = sisdr_loss(estimated, target)
+    l1  = torch.nn.functional.l1_loss(estimated, target)
+
+    total = sdr_weight * sdr + l1_weight * l1
+    
+    metrics = {
+        "loss/total": total.item(),
+        "loss/sdr": sdr.item(),
+        "loss/sisdr": sisdr.item(),
+        "metrics/sdr": -sdr.item(),  # Positive SDR for logging
+        "metrics/sisdr": -sisdr.item(),  # Positive SI-SDR for logging
+    }
+
+    return total, metrics

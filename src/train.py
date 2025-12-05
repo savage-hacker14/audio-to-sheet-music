@@ -11,7 +11,7 @@ from demucs import pretrained
 from transformers import AutoTokenizer, ClapModel, ClapTextModelWithProjection
 
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
-from src.loss import combined_loss, sdr_loss
+from src.loss import combined_loss, combined_L1_sdr_loss, sdr_loss
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
 from utils import load_config
 
@@ -27,6 +27,9 @@ def train_epoch(
         scaler: Optional[GradScaler],
         device: str,
         use_amp: bool,
+        use_L1_cmb_loss: bool,
+        l1_sdr_weight: Optional[float],
+        l1_weight: Optional[float],
         grad_clip: float,
         sdr_weight: float,
         sisdr_weight: float,
@@ -41,6 +44,19 @@ def train_epoch(
     total_sdr = 0.0
     total_sisdr = 0.0
     num_batches = 0
+    
+    # Set loss function
+    if use_L1_cmb_loss:
+        loss_function = combined_L1_sdr_loss
+        weight1 = l1_sdr_weight
+        if l1_weight is None:
+            raise ValueError("l1_weight must be provided when using L1 combination loss.")
+        weight2 = l1_weight
+        print("**Using L1 + SDR combination loss for training")
+    else:
+        loss_function = combined_loss
+        weight1 = sdr_weight
+        weight2 = sisdr_weight
 
     pbar = tqdm(dataloader, desc=f"Epoch {epoch + 1}")
 
@@ -51,11 +67,13 @@ def train_epoch(
 
         optimizer.zero_grad()
 
+        # TODO: Add L1 + SDR combination loss option
+
         if use_amp and device == "cuda":
             with autocast():
                 estimated = model(mixture, prompts)
-                loss, metrics = combined_loss(
-                    estimated, target, sdr_weight, sisdr_weight
+                loss, metrics = loss_function(
+                    estimated, target, weight1, weight2
                 )
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
@@ -64,8 +82,8 @@ def train_epoch(
             scaler.update()
         else:
             estimated = model(mixture, prompts)
-            loss, metrics = combined_loss(
-                estimated, target, sdr_weight, sisdr_weight
+            loss, metrics = loss_function(
+                estimated, target, weight1, weight2
             )
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -103,6 +121,9 @@ def validate(
         dataloader: DataLoader,
         device: str,
         use_amp: bool,
+        use_L1_cmb_loss: bool,
+        l1_sdr_weight: Optional[float],
+        l1_weight: Optional[float],
         sdr_weight: float = 0.9,
         sisdr_weight: float = 0.1,
 ) -> Dict[str, float]:
@@ -115,6 +136,18 @@ def validate(
     num_batches = 0
 
     stem_metrics = {name: {"sdr": 0.0, "count": 0} for name in STEM_PROMPTS.keys()}
+    
+    # Set loss function
+    if use_L1_cmb_loss:
+        loss_function = combined_L1_sdr_loss
+        weight1 = l1_sdr_weight
+        if l1_weight is None:
+            raise ValueError("l1_weight must be provided when using L1 combination loss.")
+        weight2 = l1_weight
+    else:
+        loss_function = combined_loss
+        weight1 = sdr_weight
+        weight2 = sisdr_weight
 
     for batch in tqdm(dataloader, desc="Validating"):
         mixture = batch["mixture"].to(device)
@@ -125,10 +158,10 @@ def validate(
         if use_amp and device == "cuda":
             with autocast():
                 estimated = model(mixture, prompts)
-                loss, metrics = combined_loss(estimated, target, sdr_weight, sisdr_weight)
+                loss, metrics = loss_function(estimated, target, weight1, weight2)
         else:
             estimated = model(mixture, prompts)
-            loss, metrics = combined_loss(estimated, target, sdr_weight, sisdr_weight)
+            loss, metrics = loss_function(estimated, target, weight1, weight2)
 
         total_loss += metrics["loss/total"]
         total_sdr += metrics["metrics/sdr"]
@@ -281,6 +314,10 @@ def train(config_path):
     learning_rate   = float(training_cfg["optimizer"].get("lr", 1e-4))
     weight_decay    = float(training_cfg["optimizer"].get("weight_decay", 1e-5))
     grad_clip       = training_cfg["optimizer"].get("grad_clip", 1.0)
+    use_L1_cmb_loss = training_cfg.get("use_L1_comb_loss", False)
+    if (use_L1_cmb_loss):
+        l1_sdr_weight   = training_cfg["L1_comb_loss"].get("sdr_weight", 1.0)
+        l1_weight       = training_cfg["L1_comb_loss"].get("l1_weight", 0.05)
     # Loss weights
     sdr_weight      = training_cfg["loss_weights"].get("sdr", 0.9)
     sisdr_weight    = training_cfg["loss_weights"].get("sisdr", 0.1)
@@ -473,6 +510,9 @@ def train(config_path):
             scaler=scaler,
             device=device,
             use_amp=use_amp,
+            use_L1_cmb_loss=use_L1_cmb_loss,
+            l1_sdr_weight=l1_sdr_weight,
+            l1_weight=l1_weight,
             grad_clip=grad_clip,
             sdr_weight=sdr_weight,
             sisdr_weight=sisdr_weight,
