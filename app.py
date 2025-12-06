@@ -181,6 +181,7 @@ def download_youtube_audio(yt_link):
     """Download audio from a YouTube link using yt-dlp."""
     try:
         import yt_dlp
+        os.remove("temp/yt_audio.webm") if os.path.exists("temp/yt_audio.webm") else None
         
         ydl_opts = {
             'format': 'bestaudio/best',
@@ -221,7 +222,8 @@ def process_audio(audio_file, yt_link, text_prompt):
         print(f"Loaded audio: {mixture.shape}, sr={sr}")
         
         # Create input spectrogram
-        input_spec_fig = create_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
+        #input_spec_fig = create_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
+        input_spec_fig = plot_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
         
         # Run separation
         print(f"Running separation with prompt: '{text_prompt}'")
