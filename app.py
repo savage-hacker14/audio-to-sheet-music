@@ -20,24 +20,26 @@ from demucs import pretrained
 from transformers import ClapModel, AutoTokenizer
 
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
-
+from utils import load_config, plot_spectrogram
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
-CHECKPOINT_PATH = "./src/models/weights/best_model.pt"  # Change as needed
-SAMPLE_RATE = 44100
-SEGMENT_SECONDS = 6.0
-OVERLAP = 0.1
+cfg = load_config("config.yaml")
+CHECKPOINT_PATH     = cfg["training"]["resume_from"]  # Change as needed
+SAMPLE_RATE         = cfg["data"]["sample_rate"]
+SEGMENT_SECONDS     = cfg["data"]["segment_seconds"]
+OVERLAP             = cfg["data"]["overlap"]
 
 # Auto-detect device
-if torch.cuda.is_available():
-    DEVICE = "cuda"
-elif torch.backends.mps.is_available():
-    DEVICE = "mps"
-else:
-    DEVICE = "cpu"
+# if torch.cuda.is_available():
+#     DEVICE = "cuda"
+# elif torch.backends.mps.is_available():
+#     DEVICE = "mps"
+# else:
+#     DEVICE = "cpu"
+DEVICE = "cpu"
 
 
 # ============================================================================
@@ -175,22 +177,47 @@ def chunked_inference(mixture, prompt):
     
     return output
 
+def download_youtube_audio(yt_link):
+    """Download audio from a YouTube link using yt-dlp."""
+    try:
+        import yt_dlp
+        
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'outtmpl': 'temp/yt_audio.webm',
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([yt_link])
+        
+        mixture, sr = load_audio("temp/yt_audio.webm", target_sr=SAMPLE_RATE)
+        return (sr, mixture.T.numpy())
+    except Exception as e:
+        return f"Error downloading audio from YouTube: {str(e)}"
+
 
 # ============================================================================
 # Gradio Interface Functions
 # ============================================================================
 
-def process_audio(audio_file, text_prompt):
+def process_audio(audio_file, yt_link, text_prompt):
     """Main processing function for the Gradio interface."""
-    if audio_file is None:
+    if audio_file is None and (yt_link is None or yt_link.strip() == ""):
         return None, None, None, None, "Please upload an audio file."
     
     if not text_prompt or text_prompt.strip() == "":
         return None, None, None, None, "Please enter a text prompt."
     
+    if yt_link and yt_link.strip() != "":
+        try:
+            download_youtube_audio(yt_link)
+        except Exception as e:
+            return None, None, None, None, str(e)
+    
     try:
         # Load audio
-        mixture, sr = load_audio(audio_file)
+        mixture, sr = load_audio(audio_file if audio_file else "temp/yt_audio.webm", target_sr=SAMPLE_RATE)
         print(f"Loaded audio: {mixture.shape}, sr={sr}")
         
         # Create input spectrogram
@@ -258,6 +285,11 @@ def create_demo():
                     type="filepath",
                     sources=["upload"]
                 )
+                yt_link_input = gr.Textbox(
+                    label="YouTube Video URL (optional)",
+                    placeholder="Provide a YouTube link to fetch audio",
+                    lines=1
+                )
                 text_input = gr.Textbox(
                     label="Text Prompt",
                     placeholder="Enter what you want to extract (e.g., 'drums', 'vocals', 'bass')",
@@ -281,8 +313,7 @@ def create_demo():
                     submit_btn = gr.Button("Separate Audio", variant="primary")
                 
                 status_output = gr.Textbox(label="Status", interactive=False)
-                
-                
+                yt_link_input.change(download_youtube_audio, inputs=[yt_link_input], outputs=[audio_input])
         
         with gr.Row():
             with gr.Column():
@@ -306,7 +337,7 @@ def create_demo():
         # Button actions
         submit_btn.click(
             fn=process_audio,
-            inputs=[audio_input, text_input],
+            inputs=[audio_input, yt_link_input, text_input],
             outputs=[
                 input_audio_player,
                 output_audio_player,
