@@ -222,8 +222,8 @@ def process_audio(audio_file, yt_link, text_prompt):
         print(f"Loaded audio: {mixture.shape}, sr={sr}")
         
         # Create input spectrogram
-        #input_spec_fig = create_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
-        input_spec_fig = plot_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
+        input_spec_fig = create_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
+        #input_spec_fig = plot_spectrogram(mixture, sr, title="Input Mixture Spectrogram")
         
         # Run separation
         print(f"Running separation with prompt: '{text_prompt}'")
@@ -350,13 +350,14 @@ def create_demo():
         )
         
         def clear_all():
-            return None, "", None, None, None, None, ""
+            return None, "", None, None, None, None, None, ""
         
         clear_btn.click(
             fn=clear_all,
             outputs=[
                 audio_input,
                 text_input,
+                yt_link_input,
                 input_audio_player,
                 output_audio_player,
                 input_spec_plot,
