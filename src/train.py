@@ -12,8 +12,8 @@ from transformers import AutoTokenizer, ClapModel, ClapTextModelWithProjection
 
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.loss import combined_loss, combined_L1_sdr_loss, sdr_loss
-from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
-from utils import load_config
+from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS, PROMPT_TO_STEM
+from utils import load_config, log_separation_spectrograms_to_wandb, log_audio_to_wandb
 
 
 # ============================================================================
@@ -107,7 +107,22 @@ def train_epoch(
                 "train/sisdr": metrics["metrics/sisdr"],
                 "train/step": epoch * len(dataloader) + batch_idx,
             })
-
+            # Plot spectrograms for first sample in batch and log to wandb
+            # NOTE: For now, only 1 extracted stem is visualized (should be extended to all stems later)
+            stem_name_log = PROMPT_TO_STEM[prompts[0]]
+            log_separation_spectrograms_to_wandb(
+                mixture[0:1],
+                estimated[0:1],
+                target[0:1],
+                stem_name_log,
+                epoch,
+                batch_idx
+            )
+            # Log audio to wandb
+            log_audio_to_wandb(mixture[0:1], "mixture", is_gt=True)
+            log_audio_to_wandb(target[0:1], stem_name_log, is_gt=True)
+            log_audio_to_wandb(estimated[0:1], stem_name_log, is_gt=False)
+            
     return {
         "loss": total_loss / num_batches,
         "sdr": total_sdr / num_batches,

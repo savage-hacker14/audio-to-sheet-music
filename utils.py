@@ -373,6 +373,34 @@ def log_spectrogram_to_wandb(
     # Close the figure to free memory
     plt.close(fig)
 
+def log_audio_to_wandb(
+    audio: torch.Tensor,
+    stem_name: str,
+    is_gt: bool,
+    sample_rate: int = 44100
+):
+    """
+    Log audio waveform to W&B.
+    
+    Args:
+        audio: (C, T) audio waveform tensor
+        stem_name: Name of the stem
+        is_gt: Whether this is ground truth audio (or extracted audio)
+        sample_rate: Audio sample rate
+    """
+    import wandb
+    
+    # Convert to numpy
+    audio_np = audio.cpu().numpy().T  # (T, C)
+    title =f"true_{stem_name}" if is_gt else f"extracted_{stem_name}"
+    keyname = f"audio/{title}"
+    wandb.log({
+        keyname: wandb.Audio(
+            audio_np,
+            sample_rate=sample_rate,
+            caption=title
+        )
+    })
 
 def log_separation_spectrograms_to_wandb(
     mixture: torch.Tensor,
