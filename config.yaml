@@ -37,10 +37,11 @@ training:
   #resume_from: checkpoints/2025_11_30_batch4/best_model.pt
 
 wandb:
-  use_wandb: True                                    # Whether to use Weights & Biases for experiment tracking       
+  use_wandb: True                                    # Whether to use Weights & Biases for experiment tracking
   project: audio-text-htdemucs                        # Wandb project name
   run_name: null
   log_every: 50                                       # Log to wandb every N batches
   validate_every: 1                                   # Validate every N epochs
   save_every: 5                                       # Save model checkpoint every N epochs
-  checkpoint_dir: checkpoints/2025_12_04/             # Directory to save model checkpoints           
+  checkpoint_dir: checkpoints/2025_12_06/             # Directory to save model checkpoints
+  output_dir: results/2025_12_06                      # Directory to save inference results

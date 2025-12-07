@@ -10,7 +10,7 @@ from torchaudio.transforms import Fade
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
 from src.loss import sdr_loss
-from utils import plot_separation_spectrograms
+from utils import plot_separation_spectrograms, load_config
 import matplotlib
 from matplotlib import pyplot as plt
 matplotlib.use('TkAgg')  # Interactive backend
@@ -206,9 +206,14 @@ def test_inference(
 
 
 if __name__ == "__main__":
+    cfg = load_config("config.yaml")
+
+    checkpoint_path = str(Path(cfg["wandb"]["checkpoint_dir"]) / "best_model.pt")
+
     test_inference(
-        checkpoint_path="checkpoints/2025_12_04/best_model.pt",
-        data_dir="/home/jacob/datasets/musdb18/inference2",
-        output_dir="results/2025_12_05",
-        device='cpu',
+        checkpoint_path=checkpoint_path,
+        data_dir=cfg["data"]["test_dir"],
+        output_dir=cfg["wandb"]["output_dir"],
+        sample_rate=cfg["data"]["sample_rate"],
+        segment_seconds=cfg["data"]["segment_seconds"],
     )
