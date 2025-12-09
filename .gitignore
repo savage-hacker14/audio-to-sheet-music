@@ -3,6 +3,7 @@ data/*
 results/*
 checkpoints/*
 clapsep_model/*
+**/best_model.pt
 
 # macOS
 .DS_Store

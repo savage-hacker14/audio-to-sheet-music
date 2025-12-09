@@ -11,3 +11,9 @@ stempeg==0.2.6
 tqdm
 transformers==4.51.1
 wandb==0.23.0
+# Optional dependencies for embedding comparison
+scikit-learn
+seaborn
+gensim  # For Word2Vec embeddings
+umap-learn  # For UMAP dimensionality reduction (optional, better than t-SNE)
+tensorboard  # For TensorBoard visualization (optional)
