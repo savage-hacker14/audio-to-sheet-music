@@ -1,8 +1,12 @@
 # ML ignores
 data/*
 results/*
+results-bench/
 checkpoints/*
 clapsep_model/*
+
+# Figures
+presentation/
 
 # macOS
 .DS_Store
