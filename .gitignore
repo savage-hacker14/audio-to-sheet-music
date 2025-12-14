@@ -4,6 +4,7 @@ results/*
 checkpoints/*
 clapsep_model/*
 **/best_model.pt
+presentation/*
 
 # macOS
 .DS_Store
