@@ -125,7 +125,7 @@ class OurModel(SeparationModel):
     def __init__(self, checkpoint_path: str, device: str = "cuda"):
         self.device = device
         self.segment_seconds = 6.0
-        self.overlap = 0.1
+        self.overlap = 1.5  # 1.5 second overlap (~25%) to match HTDemucs
         
         # Load pretrained components
         print("Loading pretrained HTDemucs for our model...")

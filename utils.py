@@ -172,7 +172,11 @@ def plot_spectrogram_comparison(
         matplotlib Figure object
     """
     n_specs = len(spectrograms)
-    fig, axes = plt.subplots(1, n_specs, figsize=(figsize[0], figsize[1]))
+    fig, axes = plt.subplots(
+        1, n_specs, 
+        figsize=(figsize[0], figsize[1]),
+        constrained_layout=True  # Better layout handling with colorbars
+    )
     
     if n_specs == 1:
         axes = [axes]
@@ -208,9 +212,8 @@ def plot_spectrogram_comparison(
     fig.colorbar(img, ax=axes, format='%+2.0f dB', label='Magnitude (dB)')
     
     if suptitle:
-        fig.suptitle(suptitle, fontsize=12, y=1.02)
+        fig.suptitle(suptitle, fontsize=12)
     
-    fig.tight_layout()
     return fig
 
 
@@ -289,23 +292,35 @@ def plot_all_stems_spectrograms(
     n_stems = len(stem_names)
     
     # Create grid: rows = stems, cols = [Estimated, Ground Truth]
-    fig, axes = plt.subplots(n_stems, 2, figsize=figsize)
+    fig, axes = plt.subplots(
+        n_stems, 2, 
+        figsize=figsize,
+        constrained_layout=True  # Better layout handling with colorbars
+    )
     
     if n_stems == 1:
         axes = axes.reshape(1, -1)
     
-    # Compute mixture spectrogram for reference
-    spec_mix = compute_spectrogram(mixture, n_fft=n_fft, hop_length=hop_length)
+    # Compute all spectrograms and find global min/max for consistent colorbar
+    all_specs = []
+    spec_data = {}
     
-    for row, stem_name in enumerate(stem_names):
-        # Estimated
+    for stem_name in stem_names:
         spec_est = compute_spectrogram(
             estimated_stems[stem_name], n_fft=n_fft, hop_length=hop_length
         )
-        # Reference
         spec_ref = compute_spectrogram(
             reference_stems[stem_name], n_fft=n_fft, hop_length=hop_length
         )
+        spec_data[stem_name] = {'est': spec_est, 'ref': spec_ref}
+        all_specs.extend([spec_est.cpu().numpy(), spec_ref.cpu().numpy()])
+    
+    vmin = min(s.min() for s in all_specs)
+    vmax = max(s.max() for s in all_specs)
+    
+    for row, stem_name in enumerate(stem_names):
+        spec_est = spec_data[stem_name]['est']
+        spec_ref = spec_data[stem_name]['ref']
         
         # Get time extent
         n_frames = spec_est.shape[1]
@@ -316,7 +331,8 @@ def plot_all_stems_spectrograms(
         spec_np = spec_est.detach().cpu().numpy()
         axes[row, 0].imshow(
             spec_np, aspect='auto', origin='lower', cmap='magma',
-            extent=[0, time_max, 0, freq_max / 1000]
+            extent=[0, time_max, 0, freq_max / 1000],
+            vmin=vmin, vmax=vmax
         )
         axes[row, 0].set_title(f'{stem_name.capitalize()} - Estimated')
         axes[row, 0].set_ylabel('Freq (kHz)')
@@ -325,7 +341,8 @@ def plot_all_stems_spectrograms(
         spec_np = spec_ref.detach().cpu().numpy()
         img = axes[row, 1].imshow(
             spec_np, aspect='auto', origin='lower', cmap='magma',
-            extent=[0, time_max, 0, freq_max / 1000]
+            extent=[0, time_max, 0, freq_max / 1000],
+            vmin=vmin, vmax=vmax
         )
         axes[row, 1].set_title(f'{stem_name.capitalize()} - Ground Truth')
         
@@ -334,8 +351,7 @@ def plot_all_stems_spectrograms(
     axes[-1, 1].set_xlabel('Time (s)')
     
     fig.colorbar(img, ax=axes, format='%+2.0f dB', label='Magnitude (dB)')
-    fig.suptitle('Stem Separation Results', fontsize=14, y=1.0)
-    fig.tight_layout()
+    fig.suptitle('Stem Separation Results', fontsize=14)
     
     return fig
 

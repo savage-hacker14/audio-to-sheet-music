@@ -4,6 +4,11 @@ results/*
 results-bench/
 checkpoints/*
 clapsep_model/*
+**/best_model.pt
+presentation/*
+
+# Temp data
+temp/
 
 # Figures
 presentation/
