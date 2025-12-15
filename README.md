@@ -1,9 +1,6 @@
-# audio-to-sheet-music
-CS 7150 Final Project: Audio to Sheet Music Conversion using Transformer models
-
 <div align="center">
-  <h1>Audio to Sheet Music Transcription</h1>
-  <p><i>Converting Audio Files</i></p>
+  <h1>Music Stem Separation with Text-Conditioning using a Transformer Model</h1>
+  <p><i>Extracting musical stems (e.g. drums, bass, vocals, etc.) from a mixed audio file</i></p>
 
   <!-- PyTorch Badge -->
   <a href="https://pytorch.org/" target="_blank" style="text-decoration: none; display: inline-block;">
@@ -16,24 +13,25 @@ CS 7150 Final Project: Audio to Sheet Music Conversion using Transformer models
   </a>
 
   <!-- Dataset Badge -->
-  <a href="https://zenodo.org/records/4599666" target="_blank" style="text-decoration: none; display: inline-block;">
+  <a href="https://sigsep.github.io/datasets/musdb.html" target="_blank" style="text-decoration: none; display: inline-block;">
     <img src="https://img.shields.io/badge/Dataset-MusDB18-8A2BE2?style=flat-square&logo=gitbook&logoColor=white&labelColor=gray" />
   </a>
 </div>
 
----
-This repository tackles audio to sheet music conversion, specifically focusing on stem/track
-separation and MIDI conversion
-![AMT_Workflow](Audio_Machine_Translation_Flowchart.png)
+## Authors
+Jacob Krucinski - [email](mailto:jacob1576@gmail.com) <br>
+Maximilian Huber - [email](mailto:huber.maxi@northeastern.edu) <br>
+Surya Mani - [email](mailto:mani.su@northeastern.edu) <br>
+Noah Smith - [email](mailto:smith.noah@northeastern.edu) <br>
 
 ## Python Environment
-It is highly recommended to create a new Python virtual environment to 
+It is highly recommended to create a new Python 3.13 virtual environment to 
 run this repo. If using `conda`, the following commands can be used to create the new environment:
 ```
 conda create -n cs_7150_stem_sep python=3.13
 ```
 
-As PyTorch is the ML framework used for this project, follow the [PyTorch instructions](https://pytorch.org/get-started/previous-versions/) (with CUDA support if desired) to install v2.6.0:
+As PyTorch is the ML framework used for this project, follow the [PyTorch instructions](https://pytorch.org/get-started/previous-versions/) (with CUDA support if desired) for installation (v.2.6.0 has been tested for this project):
 ```
 pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 ```
@@ -44,12 +42,43 @@ pip install -r requirements.txt
 ```
 
 ## Dataset
-We are using the MusDB18 dataset. We create our `torch.Dataset` class
+We are using the [MusDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We create our `torch.Dataset` class
 for it. It loads in all segments (of length 6s) for all stems for
 all songs. For the text prompts, it uses the original stem name
 (drums, bass, vocals, other) as well as slight variants
 (i.e. for vocal, "vocals", "voice", "singing", "the vocals" are used as
-additional prompts)
+additional prompts). The dataset can be downloaded for
+free from the link above.
+
+## Model Architecture
+Our model is built off the existing Hybrid Transformer Demucs 
+([HTDemucs](https://github.com/facebookresearch/demucs)) model from Meta.
+It consists of 2 parallel U-Net models with skip connections, one for the time/waveform
+domain and the other for the frequency domain. It uses a cross-attention
+bottleneck layer to learn harmonic representations unique to each stem to aid
+in the separation process. Then the decoder parts of this model
+use the attended to features and performs
+the inverse Short Time Fourier Transform 
+([iSTFT](https://www.mathworks.com/help/signal/ref/istft.html#mw_df6a90fa-0796-411d-ab9c-d86cc3c0edec_sep_mw_f4653206-42e2-4878-82ba-66875c98c86c)) 
+to convert the final spectrogram to a waveform.
+A model diagram provided by the authors is shown below:
+![HTDemucs](images/HTDemucs.png)
+
+We extend this model to support any user-defined stem name
+by adding text-conditioning using Contrastive Language-Audio Pairs 
+([CLAP](https://github.com/LAION-AI/CLAP)) text embeddings. We then
+add another cross-attention between the text embeddings and the combined 
+time & frequency embeddings from HTDemucs and modify
+the U-Net decoders to only return 1 stem (instead of 4 previously).
+This gives the HTDemucs model **zero-shot ability** for stems that
+it has not seen before. Even if not explicity trained on that stem,
+the CLAP embedding will guide the separatiion based on a similar stem it has trained on.
+
+Our model architecture is shown below. The blue boxes denotes pre-trained and frozen
+model components, and the tan represent our modifications that are trained.
+![AudioTextHTDemucs](images/AudioTextHTDemucs.png)
+
+More details on our implementation and **audio samples** can be found in our [presentation](https://docs.google.com/presentation/d/1d2muNP3LKTBLZzxt4L7sKxx_nO0klc5U9eKkQvFma6A/edit?usp=sharing).
 
 ## Training
 To train the model, run the Python scipt `main.py` from the projet root 
@@ -60,27 +89,33 @@ model, training, and Weights and Biases (wandb) parameters.
 
 The loss functions used are Signal Distortion Ratio (SDR), 
 Scale-Invariant SDR (SISDR), a combined loss function using a
-linear combination of the SDR and SISDR loss, and lastly a positive 
-SDR loss.
+linear combination of the SDR and SISDR loss, and lastly a combined L1 + SDR loss.
 
-For logging purposes during training, we use a Weights & Biases project dashboard.
-You will need to create an account using the instructions [here](https://docs.wandb.ai/models/quickstart#python).
+For logging purposes during training, we use a Weights & Biases (`wandb`) 
+project dashboard.
+If you also want to use `wandb`, you need to create an account using the instructions [here](https://docs.wandb.ai/models/quickstart#python).
+
+## Model Checkpoints
+To avoid training from scratch, the [best model file](https://huggingface.co/jacob1576/AudioTextHTDemucs/tree/main) can be found on HuggingFace.
+
 
 ## Inference
-As a pre-requisite, you must have the model checkpoint file.
-To avoid training from scratch, the [latest model file](https://northeastern-my.sharepoint.com/:f:/r/personal/krucinski_j_northeastern_edu/Documents/CS%207150%20Final%20Project/Models/2025_12_01_batch4?csf=1&web=1&e=yPVYLf) 
-can be found on the shared OneDrive.
+To simplify the inference process, we have created a Gradio demo
+which supports uploading a local audio file or using a YouTube link.
+To run the gradio app, please run:
+```
+python app.py
+```
+Sreenshot of the app is shown below:
+![GradioDemo1](images/GradioDemo1.png)
+![GradioDemo2](images/GradioDemo2.png)
 
-To perform inference, use the following procedure:
-1. Create an `inference` folder, either in the dataset directory or in the project root directory
-2. Add ONE .stem.mp4 audio file to the `inference` directory from step 1
-3. Run the `test_inference.py` script from the root directory, and change paths in the YAML file as desired
+For custom inference, the `test-inference.py` file can be modified.
 
-The extracted stems for the entire track length will be placed in a subfolder of the specified
-`results` directory with the name of the track.
 
-To experiment with zero-shot inference on unseen stems, edit line 15
-of `test_inference.py`. The inference script loops through all these
-strings and passes them as prompts to the trained model.
+## References
+Défossez, A. (2021). Hybrid Spectrogram and Waveform Source Separation. Proceedings of the ISMIR 2021 Workshop on Music Source Separation.
 
-Existing results collected by Jacob can be found on the shared [OneDrive](https://northeastern-my.sharepoint.com/:f:/r/personal/krucinski_j_northeastern_edu/Documents/CS%207150%20Final%20Project/Results?csf=1&web=1&e=4Irmd9).
+Wu*, Y., Chen*, K., Zhang*, T., Hui*, Y., Berg-Kirkpatrick, T., & Dubnov, S. (2023). Large-scale Contrastive Language-Audio Pretraining with Feature Fusion and Keyword-to-Caption Augmentation. IEEE International Conference on Acoustics, Speech and Signal Processing, ICASSP.
+
+Ma, H., Peng, Z., Li, X., Shao, M., Wu, X., & Liu, J. (2024). CLAPSep: Leveraging Contrastive Pre-trained Models for Multi-Modal Query-Conditioned Target Sound Extraction. arXiv Preprint arXiv:2402. 17455.
