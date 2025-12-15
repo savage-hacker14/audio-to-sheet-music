@@ -25,6 +25,12 @@ STEM_PROMPTS: Dict[str, List[str]] = {
     "vocals": ["vocals", "voice", "singing", "the vocals"],
 }
 
+PROMPT_TO_STEM: Dict[str, str] = {
+    prompt: stem
+    for stem, prompts in STEM_PROMPTS.items()
+    for prompt in prompts
+}
+
 STEM_NAME_TO_INDEX = {"drums": 0, "bass": 1, "other": 2, "vocals": 3}
 
 

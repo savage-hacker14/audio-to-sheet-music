@@ -10,9 +10,13 @@ from torchaudio.transforms import Fade
 from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.dataloader import MusDBStemDataset, collate_fn, STEM_PROMPTS
 from src.loss import sdr_loss
+from utils import plot_separation_spectrograms, load_config
+import matplotlib
+from matplotlib import pyplot as plt
+matplotlib.use('TkAgg')  # Interactive backend
 
-#STEMS = ["drums", "bass", "other", "vocals"]
-STEMS = ["drums", "bass", "other", "vocals", "piano", "clapping", "guitar", "violin"]      # Adding negative query stems for testing
+STEMS = ["drums", "bass", "other", "vocals"]
+#STEMS = ["drums", "bass", "other", "vocals", "piano", "clapping", "guitar", "violin"]      # Adding negative query stems for testing
 
 def load_model(checkpoint_path: str, device: str = "cuda") -> AudioTextHTDemucs:
     """Load model from checkpoint."""
@@ -28,7 +32,7 @@ def load_model(checkpoint_path: str, device: str = "cuda") -> AudioTextHTDemucs:
 
     print(f"Loading checkpoint from {checkpoint_path}...")
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"], strict=False)
     print(f"Loaded checkpoint from epoch {checkpoint.get('epoch', '?')}")
 
     model = model.to(device)
@@ -170,7 +174,15 @@ def test_inference(
         output_file = full_dir / f"mixture.wav"
         sf.write(str(output_file), mixture_np, sample_rate)
         
-    # TODO: Plot spectrograms of original vs extracted stems
+    # TODO: Plot spectrograms of original vs extracted stems for full track length
+    for i in range(len(STEMS)):
+        stem_name = STEMS[i]
+        estimate = final[i, :, :]
+        fig = plot_separation_spectrograms(full_mixure, estimate, all_stems[i + 1], stem_name, sample_rate)
+        fig.show()
+    
+    # Wait for user to close all plots
+    plt.show()
 
     # # Summary
     # print("\n" + "=" * 60)
@@ -194,9 +206,14 @@ def test_inference(
 
 
 if __name__ == "__main__":
+    cfg = load_config("config.yaml")
+
+    checkpoint_path = str(Path(cfg["wandb"]["checkpoint_dir"]) / "best_model.pt")
+
     test_inference(
-        checkpoint_path="checkpoints/2025_11_30_batch4/best_model.pt",
-        data_dir="/home/jacob/datasets/musdb18/inference2",
-        output_dir="results/2025_12_01",
-        device=None,
+        checkpoint_path=checkpoint_path,
+        data_dir=cfg["data"]["test_dir"],
+        output_dir=cfg["wandb"]["output_dir"],
+        sample_rate=cfg["data"]["sample_rate"],
+        segment_seconds=cfg["data"]["segment_seconds"],
     )

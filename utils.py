@@ -119,7 +119,7 @@ def plot_spectrogram(
     Returns:
         matplotlib Figure object
     """
-    spec_np = spec.cpu().numpy() if isinstance(spec, torch.Tensor) else spec
+    spec_np = spec.detach().cpu().numpy() if isinstance(spec, torch.Tensor) else spec
     
     fig, ax = plt.subplots(figsize=figsize)
     
@@ -182,13 +182,13 @@ def plot_spectrogram_comparison(
         axes = [axes]
     
     # Find global min/max for consistent colorbar
-    all_specs = [s.cpu().numpy() if isinstance(s, torch.Tensor) else s 
+    all_specs = [s.detach().cpu().numpy() if isinstance(s, torch.Tensor) else s 
                  for s in spectrograms.values()]
     vmin = min(s.min() for s in all_specs)
     vmax = max(s.max() for s in all_specs)
     
     for ax, (name, spec) in zip(axes, spectrograms.items()):
-        spec_np = spec.cpu().numpy() if isinstance(spec, torch.Tensor) else spec
+        spec_np = spec.detach().cpu().numpy() if isinstance(spec, torch.Tensor) else spec
         
         n_frames = spec_np.shape[1]
         time_max = n_frames * hop_length / sample_rate
@@ -328,7 +328,7 @@ def plot_all_stems_spectrograms(
         freq_max = sample_rate / 2
         
         # Plot estimated
-        spec_np = spec_est.cpu().numpy()
+        spec_np = spec_est.detach().cpu().numpy()
         axes[row, 0].imshow(
             spec_np, aspect='auto', origin='lower', cmap='magma',
             extent=[0, time_max, 0, freq_max / 1000],
@@ -338,7 +338,7 @@ def plot_all_stems_spectrograms(
         axes[row, 0].set_ylabel('Freq (kHz)')
         
         # Plot reference
-        spec_np = spec_ref.cpu().numpy()
+        spec_np = spec_ref.detach().cpu().numpy()
         img = axes[row, 1].imshow(
             spec_np, aspect='auto', origin='lower', cmap='magma',
             extent=[0, time_max, 0, freq_max / 1000],
@@ -389,6 +389,34 @@ def log_spectrogram_to_wandb(
     # Close the figure to free memory
     plt.close(fig)
 
+def log_audio_to_wandb(
+    audio: torch.Tensor,
+    stem_name: str,
+    is_gt: bool,
+    sample_rate: int = 44100
+):
+    """
+    Log audio waveform to W&B.
+    
+    Args:
+        audio: (C, T) audio waveform tensor
+        stem_name: Name of the stem
+        is_gt: Whether this is ground truth audio (or extracted audio)
+        sample_rate: Audio sample rate
+    """
+    import wandb
+    
+    # Convert to numpy
+    audio_np = audio.detach().cpu().numpy().T  # (T, C)
+    title =f"true_{stem_name}" if is_gt else f"extracted_{stem_name}"
+    keyname = f"audio/{title}"
+    wandb.log({
+        keyname: wandb.Audio(
+            audio_np,
+            sample_rate=sample_rate,
+            caption=title
+        )
+    })
 
 def log_separation_spectrograms_to_wandb(
     mixture: torch.Tensor,

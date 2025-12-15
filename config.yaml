@@ -2,7 +2,7 @@ data:
   train_dir: /home/jacob/datasets/musdb18/train       # Path to train subfolder of MUSDB18 dataset
   test_dir: /home/jacob/datasets/musdb18/test         # Path to test subfolder of MUSDB18 dataset
   segment_seconds: 6.0                                # Length of audio segments for training [s]   
-  pct_train: 0.1                                      # Decimal percentage of full data to use for training (otherwise 1 epoch takes ~15 hrs)
+  pct_train: 0.2                                      # Decimal percentage of full data to use for training (otherwise 1 epoch takes ~15 hrs)
   pct_test: 0.1                                       # Decimal percentage of full data to use for testing
   overlap: 0.1                                        # Overlap between segments for chunked inference [s]
   sample_rate: 44100                                  # Sample rate for audio files [Hz]
@@ -19,7 +19,7 @@ model:
   use_amp: False                                      # Whether to use automatic mixed precision (AMP) during training - WORK IN PROGRESS
 
 training:
-  batch_size: 4                                       # Batch size for training         
+  batch_size: 8                                       # Batch size for training         
   num_workers: 0                                      # Number of DataLoader workers
   num_epochs: 20                                      # Number of training epochs
   optimizer:  
@@ -30,13 +30,19 @@ training:
   loss_weights:
     sdr: 0.9                                          # Weight for SDR loss             
     sisdr_weight: 0.1                                 # Weight for SI-SDR loss, total loss is (sdr_weight * sdr) + (sisdr_weight * si_sdr)
-  resume_from: checkpoints/2025_12_04/best_model.pt                                   # Path to checkpoint to resume training from (set to null to train from scratch)
+  use_L1_comb_loss: True                              # Whether to use L1 combination loss
+  L1_comb_loss: 
+    sdr_weight: 1.0                                   # Weight for SDR in L1 combination loss
+    l1_weight: 0.1                                    # Weight for L1 loss in L1 combination loss                                  
+  resume_from: null                                   # Path to checkpoint to resume training from (set to null to train from scratch)
+  #resume_from: checkpoints/2025_11_30_batch4/best_model.pt
 
 wandb:
-  use_wandb: True                                     # Whether to use Weights & Biases for experiment tracking       
+  use_wandb: True                                    # Whether to use Weights & Biases for experiment tracking
   project: audio-text-htdemucs                        # Wandb project name
   run_name: null
   log_every: 50                                       # Log to wandb every N batches
   validate_every: 1                                   # Validate every N epochs
   save_every: 5                                       # Save model checkpoint every N epochs
-  checkpoint_dir: checkpoints/2025_12_03/             # Directory to save model checkpoints           
+  checkpoint_dir: checkpoints/2025_12_06/             # Directory to save model checkpoints
+  output_dir: results/2025_12_06                      # Directory to save inference results

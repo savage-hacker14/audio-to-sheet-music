@@ -38,6 +38,7 @@ from src.models.stem_separation.ATHTDemucs_v2 import AudioTextHTDemucs
 from src.loss import sdr_loss, sisdr_loss, new_sdr_metric
 from src.dataloader import MusDBStemDataset, STEM_PROMPTS
 from utils import (
+    load_config,
     plot_separation_spectrograms,
     plot_all_stems_spectrograms,
     log_spectrogram_to_wandb,
@@ -892,10 +893,15 @@ def save_results(all_results: Dict[str, List[TrackResult]], output_dir: Path):
 # ============================================================================
 
 def main():
+    # Load config for default values
+    cfg = load_config("config.yaml")
+    default_test_dir = cfg["data"]["test_dir"]
+    default_checkpoint = f"{cfg['wandb']['checkpoint_dir']}/best_model.pt"
+
     parser = argparse.ArgumentParser(description="Evaluate stem separation models on MusDB18")
-    parser.add_argument("--test-dir", type=str, default="../musdb18/test",
+    parser.add_argument("--test-dir", type=str, default=default_test_dir,
                         help="Path to MusDB18 test directory")
-    parser.add_argument("--checkpoint", type=str, default="/Users/surya/Downloads/2025_12_01_batch4/best_model.pt",
+    parser.add_argument("--checkpoint", type=str, default=default_checkpoint,
                         help="Path to our model checkpoint")
     parser.add_argument("--output-dir", type=str, default="results",
                         help="Directory to save results")
