@@ -186,7 +186,8 @@ def plot_spectrogram(stft, title="Spectrogram"):
 #
 
 # We download the audio file from our storage. Feel free to download another file and use audio from a specific path
-SAMPLE_SONG = download_asset("tutorial-assets/hdemucs_mix.wav")
+#SAMPLE_SONG = download_asset("tutorial-assets/hdemucs_mix.wav")
+SAMPLE_SONG = "data/test/Forkupines - Semantics.stem.mp4"
 waveform, sample_rate = torchaudio.load(SAMPLE_SONG)  # replace SAMPLE_SONG with desired path for different song
 waveform = waveform.to(device)
 mixture = waveform
