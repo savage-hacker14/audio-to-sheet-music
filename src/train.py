@@ -329,9 +329,8 @@ def train(config_path):
     weight_decay    = float(training_cfg["optimizer"].get("weight_decay", 1e-5))
     grad_clip       = training_cfg["optimizer"].get("grad_clip", 1.0)
     use_L1_cmb_loss = training_cfg.get("use_L1_comb_loss", False)
-    if (use_L1_cmb_loss):
-        l1_sdr_weight   = training_cfg["L1_comb_loss"].get("sdr_weight", 1.0)
-        l1_weight       = training_cfg["L1_comb_loss"].get("l1_weight", 0.05)
+    l1_sdr_weight   = training_cfg["L1_comb_loss"].get("sdr_weight", 1.0)
+    l1_weight       = training_cfg["L1_comb_loss"].get("l1_weight", 0.05)
     # Loss weights
     sdr_weight      = training_cfg["loss_weights"].get("sdr", 0.9)
     sisdr_weight    = training_cfg["loss_weights"].get("sisdr", 0.1)

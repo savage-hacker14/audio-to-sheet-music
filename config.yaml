@@ -15,7 +15,7 @@ model:
   model_dim: 384                                      # Model dimension
   text_dim: 512                                       # Text embedding dimension (laion/clap-htsat-unfused is 512)                
   num_heads: 8                                        # Number of attention heads for text cross-attention layer     
-  device: cuda                                        # Device to use for training (cuda for GPU or cpu)       
+  device: cpu                                        # Device to use for training (cuda for GPU or cpu)       
   use_amp: False                                      # Whether to use automatic mixed precision (AMP) during training - WORK IN PROGRESS
 
 training:
@@ -30,15 +30,15 @@ training:
   loss_weights:
     sdr: 0.9                                          # Weight for SDR loss             
     sisdr_weight: 0.1                                 # Weight for SI-SDR loss, total loss is (sdr_weight * sdr) + (sisdr_weight * si_sdr)
-  use_L1_comb_loss: True                              # Whether to use L1 combination loss
+  use_L1_comb_loss: False                              # Whether to use L1 combination loss
   L1_comb_loss: 
     sdr_weight: 1.0                                   # Weight for SDR in L1 combination loss
     l1_weight: 0.1                                    # Weight for L1 loss in L1 combination loss                                  
-  resume_from: null                                   # Path to checkpoint to resume training from (set to null to train from scratch)
-  #resume_from: checkpoints/2025_11_30_batch4/best_model.pt
+  #resume_from: null                                   # Path to checkpoint to resume training from (set to null to train from scratch)
+  resume_from: checkpoints/2025_11_30_batch4/best_model.pt
 
 wandb:
-  use_wandb: True                                    # Whether to use Weights & Biases for experiment tracking
+  use_wandb: False                                    # Whether to use Weights & Biases for experiment tracking
   project: audio-text-htdemucs                        # Wandb project name
   run_name: null
   log_every: 50                                       # Log to wandb every N batches
