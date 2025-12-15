@@ -16,6 +16,8 @@
   <a href="https://sigsep.github.io/datasets/musdb.html" target="_blank" style="text-decoration: none; display: inline-block;">
     <img src="https://img.shields.io/badge/Dataset-MusDB18-8A2BE2?style=flat-square&logo=gitbook&logoColor=white&labelColor=gray" />
   </a>
+
+  [![HuggingFace Spaces Demo](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-md-dark.svg)](https://huggingface.co/spaces/jacob1576/AudioTextHTDemucs)
 </div>
 
 ## Authors
@@ -102,11 +104,15 @@ To avoid training from scratch, the [best model file](https://huggingface.co/jac
 ## Inference
 To simplify the inference process, we have created a Gradio demo
 which supports uploading a local audio file or using a YouTube link.
-To run the gradio app, please run:
+To run the gradio app locally, please run:
 ```
 python app.py
 ```
-Sreenshot of the app is shown below:
+
+To run a file upload-only version of the Gradio app,
+it is hosted on [HuggingFace_Hub](https://huggingface.co/spaces/jacob1576/AudioTextHTDemucs).
+
+Screenshot of the app is shown below:
 ![GradioDemo1](images/GradioDemo1.png)
 ![GradioDemo2](images/GradioDemo2.png)
 
