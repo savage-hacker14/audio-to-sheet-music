@@ -6,6 +6,9 @@ clapsep_model/*
 **/best_model.pt
 presentation/*
 
+# Temp data
+temp/
+
 # macOS
 .DS_Store
 
