@@ -7,8 +7,9 @@ clapsep_model/*
 **/best_model.pt
 presentation/*
 
-# Temp data
+# Temp and old data
 temp/
+OLD/
 
 # Figures
 presentation/
